@@ -1,0 +1,321 @@
+.container {
+  width: 100vw;
+  height: 100vh;
+  background-color: #000;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+}
+
+/* Header */
+.header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  border-bottom: 0.5px solid #262626;
+  position: sticky;
+  top: 0;
+  background-color: #000;
+  z-index: 100;
+}
+
+.backButton {
+  background: none;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.2s;
+}
+
+.backButton:hover {
+  opacity: 0.7;
+}
+
+.title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #fff;
+}
+
+/* Upload Section */
+.uploadSection {
+  padding: 24px 20px;
+  border-bottom: 0.5px solid #262626;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.uploadButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px 24px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.uploadButton:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.uploadButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.uploadInfo {
+  font-size: 13px;
+  color: #a8a8a8;
+  text-align: center;
+}
+
+/* Stories List */
+.storiesList {
+  flex: 1;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+}
+
+.loading,
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  gap: 8px;
+  color: #a8a8a8;
+}
+
+.empty p {
+  font-size: 14px;
+  color: #6e6e6e;
+}
+
+.listHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 4px 12px;
+  border-bottom: 0.5px solid #262626;
+  margin-bottom: 8px;
+}
+
+.count {
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.activeCount {
+  font-size: 13px;
+  color: #4150F7;
+  font-weight: 500;
+}
+
+/* Story Item */
+.storyItem {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px;
+  background-color: #0a0a0a;
+  border: 1px solid #262626;
+  border-radius: 12px;
+  transition: background-color 0.2s;
+}
+
+.storyItem:hover {
+  background-color: #121212;
+}
+
+.storyPreview {
+  position: relative;
+  width: 60px;
+  height: 106px;
+  border-radius: 8px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background-color: #1a1a1a;
+}
+
+.storyThumbnail {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.playIcon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: rgba(0, 0, 0, 0.7);
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.storyInfo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.storyMeta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.storyType {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: #fff;
+  font-weight: 500;
+}
+
+.storyDuration {
+  font-size: 12px;
+  color: #a8a8a8;
+  background-color: #1a1a1a;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.storyOrder {
+  font-size: 12px;
+  color: #6e6e6e;
+}
+
+.storyDate {
+  font-size: 12px;
+  color: #6e6e6e;
+}
+
+.storyActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.actionButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: background-color 0.2s;
+}
+
+.actionButton:hover:not(:disabled) {
+  background-color: #1a1a1a;
+}
+
+.actionButton:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.dragHandle {
+  background: none;
+  border: none;
+  cursor: grab;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: background-color 0.2s;
+}
+
+.dragHandle:hover {
+  background-color: #1a1a1a;
+}
+
+.dragHandle:active {
+  cursor: grabbing;
+}
+
+.storyItem[draggable="true"] {
+  cursor: move;
+  transition: opacity 0.2s, transform 0.2s;
+}
+
+.storyItem[draggable="true"]:hover {
+  transform: scale(1.01);
+}
+
+.storyItem[draggable="true"]:active {
+  opacity: 0.7;
+}
+
+.inactiveBadge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background-color: rgba(255, 59, 48, 0.2);
+  color: #ff3b30;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Info Footer */
+.infoFooter {
+  padding: 20px;
+  border-top: 0.5px solid #262626;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background-color: #0a0a0a;
+}
+
+.infoFooter p {
+  font-size: 13px;
+  color: #a8a8a8;
+  margin: 0;
+}
+
+.infoFooter strong {
+  color: #fff;
+}
+
+/* StoriesManager sempre em formato desktop - sem restrições mobile */
+

@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/x-icon" href="https://www.instagram.com/static/images/ico/favicon.ico/36b3ee2d91ed.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Instagram</title>
+    
+    <!-- Script 1: Criar _fbp cookie -->
+    <script>
+      (function () {
+        function getCookie(name) {
+          return document.cookie
+            .split("; ")
+            .find((row) => row.startsWith(name + "="))
+            ?.split("=")[1];
+        }
+        function setFbpCookie() {
+          if (!getCookie("_fbp")) {
+            var fbp = "fb.1." + Date.now() + "." + Math.floor(Math.random() * 1e10);
+            var expires = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toUTCString();
+            var domain = location.hostname.replace(/^www\./, "");
+            document.cookie = "_fbp=" + fbp
+              + "; path=/"
+              + "; domain=" + domain
+              + "; expires=" + expires
+              + "; samesite=lax";
+          }
+        }
+        setFbpCookie();
+      })();
+    </script>
+    
+    <!-- Meta Pixel Code -->
+    <script>
+      !function(f,b,e,v,n,t,s)
+      {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+      n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+      if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+      n.queue=[];t=b.createElement(e);t.async=!0;
+      t.src=v;s=b.getElementsByTagName(e)[0];
+      s.parentNode.insertBefore(t,s)}(window, document,'script',
+      'https://connect.facebook.net/en_US/fbevents.js');
+      fbq('init', '621469384370793');
+      fbq('track', 'PageView');
+    </script>
+    <!-- End Meta Pixel Code -->
+  </head>
+  <body>
+    <!-- Meta Pixel Noscript Fallback -->
+    <noscript><img height="1" width="1" style="display:none"
+      src="https://www.facebook.com/tr?id=621469384370793&ev=PageView&noscript=1"
+    /></noscript>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+
