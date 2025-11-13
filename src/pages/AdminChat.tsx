@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { AdminChatService } from "@/services/chatService";
+import { MediaService } from "@/services/mediaService";
 import type { Conversation, Message } from "@/lib/supabase";
 import { supabase } from "@/lib/supabase";
 import { Send, Users, MessageCircle, Clock, Camera, Image as ImageIcon, ChevronLeft } from "lucide-react";
@@ -137,18 +138,66 @@ export default function AdminChat() {
     }
   };
 
-  const handleImageUpload = async (_file: File) => {
-    if (!selectedConversation) return;
+  const handleFileSelect = async (file: File) => {
+    if (!selectedConversation || uploading) return;
 
     try {
       setUploading(true);
-      // Placeholder - implementar upload de imagem depois
-      alert('Função de upload de imagem em desenvolvimento');
+
+      // Validar tipo de arquivo
+      if (!MediaService.isValidFileType(file)) {
+        alert('Tipo de arquivo não suportado. Use imagens, vídeos ou áudios.');
+        return;
+      }
+
+      // Comprimir se for imagem
+      let fileToUpload = file;
+      const mediaType = MediaService.getMediaType(file);
+      let thumbnail: string | undefined;
+      let duration: number | undefined;
+
+      if (mediaType === 'image') {
+        fileToUpload = await MediaService.compressImage(file, 1920);
+      } else if (mediaType === 'video') {
+        thumbnail = await MediaService.createVideoThumbnail(file) || undefined;
+        const durationSeconds = await MediaService.getMediaDuration(file);
+        // Converter segundos para milissegundos
+        duration = durationSeconds ? durationSeconds * 1000 : undefined;
+      } else if (mediaType === 'audio') {
+        const durationSeconds = await MediaService.getMediaDuration(file);
+        // Converter segundos para milissegundos
+        duration = durationSeconds ? durationSeconds * 1000 : undefined;
+      }
+
+      // Upload do arquivo
+      const uploadResult = await MediaService.uploadFile(fileToUpload, selectedConversation.id);
+      if (!uploadResult) {
+        alert('Erro ao fazer upload do arquivo');
+        return;
+      }
+
+      // Enviar mensagem com mídia
+      const newMessage = await AdminChatService.sendAdminMessage(
+        selectedConversation.id,
+        '',
+        uploadResult.url,
+        mediaType,
+        thumbnail,
+        duration
+      );
+
+      if (newMessage) {
+        setMessages((prev) => [...prev, newMessage]);
+        setMessageInput("");
+      }
     } catch (error) {
-      console.error("Erro ao enviar imagem:", error);
-      alert("Erro ao enviar imagem");
+      console.error("Erro ao enviar mídia:", error);
+      alert("Erro ao enviar arquivo");
     } finally {
       setUploading(false);
+      // Limpar inputs
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      if (cameraInputRef.current) cameraInputRef.current.value = '';
     }
   };
 
@@ -279,18 +328,79 @@ export default function AdminChat() {
                       message.is_from_admin ? styles.sent : styles.received
                     }`}
                   >
-                    {message.content.startsWith('[Imagem:') ? (
-                      <img
-                        src={message.content.replace('[Imagem: ', '').replace(']', '')}
-                        alt="Imagem"
-                        className={styles.messageImage}
-                        onClick={() => setImageModal(message.content.replace('[Imagem: ', '').replace(']', ''))}
-                      />
-                    ) : (
+                    {/* Resposta ao Story */}
+                    {(message.replied_to_story_media_url || message.replied_to_story_thumbnail) && (
+                      <div className={styles.storyReplyContainer}>
+                        <span className={styles.storyReplyText}>
+                          {message.is_from_admin ? "Você respondeu ao story" : "Respondeu ao seu story"}
+                        </span>
+                        <img
+                          src={
+                            message.replied_to_story_media_type === 'video' && message.replied_to_story_thumbnail
+                              ? message.replied_to_story_thumbnail
+                              : message.replied_to_story_media_url || ''
+                          }
+                          alt="Story"
+                          className={styles.storyReplyThumbnail}
+                          onClick={() => navigate(message.replied_to_story_id ? `/story?id=${message.replied_to_story_id}` : '/story')}
+                          style={{ cursor: 'pointer' }}
+                          title="Ver story"
+                          onError={(e) => {
+                            e.currentTarget.src = '/profile.jpg';
+                          }}
+                        />
+                      </div>
+                    )}
+
+                    {/* Renderizar mídia se existir */}
+                    {message.media_url && (
+                      <div className={styles.mediaContainer}>
+                        {message.media_type === 'image' && (
+                          <img 
+                            src={message.media_url} 
+                            alt="Imagem" 
+                            className={styles.messageImage}
+                            onClick={() => setImageModal(message.media_url!)}
+                            onError={(e) => {
+                              e.currentTarget.src = '/profile.jpg';
+                            }}
+                          />
+                        )}
+                        {message.media_type === 'video' && (
+                          <div className={styles.videoContainer}>
+                            <video 
+                              src={message.media_url} 
+                              controls 
+                              className={styles.messageVideo}
+                              preload="metadata"
+                              poster={message.media_thumbnail || undefined}
+                            />
+                          </div>
+                        )}
+                        {message.media_type === 'audio' && (
+                          <div className={styles.audioContainer}>
+                            <audio 
+                              src={message.media_url} 
+                              controls 
+                              className={styles.messageAudio}
+                            />
+                            {message.media_duration && (
+                              <span className={styles.audioDuration}>
+                                {MediaService.formatDuration(Math.floor(message.media_duration / 1000))}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Texto da mensagem */}
+                    {message.content && (
                       <div className={styles.messageBubble}>
                         <p className={styles.messageText}>{message.content}</p>
                       </div>
                     )}
+
                     <span className={styles.messageTime}>
                       {formatTime(message.created_at)}
                     </span>
@@ -304,29 +414,30 @@ export default function AdminChat() {
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept="image/*"
+                  accept="image/*,video/*,audio/*"
                   style={{ display: 'none' }}
                   onChange={(e) => {
                     const file = e.target.files?.[0];
-                    if (file) handleImageUpload(file);
+                    if (file) handleFileSelect(file);
                   }}
                 />
                 <input
                   ref={cameraInputRef}
                   type="file"
-                  accept="image/*"
+                  accept="image/*,video/*"
                   capture="environment"
                   style={{ display: 'none' }}
                   onChange={(e) => {
                     const file = e.target.files?.[0];
-                    if (file) handleImageUpload(file);
+                    if (file) handleFileSelect(file);
                   }}
                 />
 
                 <button
                   className={styles.iconButton}
                   onClick={() => fileInputRef.current?.click()}
-                  disabled={uploading}
+                  disabled={uploading || sending}
+                  title="Enviar imagem ou vídeo"
                 >
                   <ImageIcon size={20} />
                 </button>
@@ -334,7 +445,8 @@ export default function AdminChat() {
                 <button
                   className={styles.iconButton}
                   onClick={() => cameraInputRef.current?.click()}
-                  disabled={uploading}
+                  disabled={uploading || sending}
+                  title="Tirar foto ou gravar vídeo"
                 >
                   <Camera size={20} />
                 </button>
@@ -357,10 +469,11 @@ export default function AdminChat() {
                 <button
                   className={styles.sendButton}
                   onClick={handleSendMessage}
-                  disabled={!messageInput.trim() || sending || uploading}
+                  disabled={(!messageInput.trim() && !uploading) || sending || uploading}
+                  title={uploading ? "Enviando mídia..." : "Enviar mensagem"}
                 >
                   {sending || uploading ? (
-                    <span>...</span>
+                    <div className={styles.spinner} />
                   ) : (
                     <Send size={20} />
                   )}

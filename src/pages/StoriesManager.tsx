@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, Upload, Eye, EyeOff, Trash2, GripVertical, Play, Image as ImageIcon } from "lucide-react";
+import { ChevronLeft, Upload, Eye, EyeOff, Trash2, GripVertical, Play, Image as ImageIcon, Link2, Link2Off } from "lucide-react";
 import { StoryService, type Story } from "@/services/storyService";
 import { MediaService } from "@/services/mediaService";
 import { ProfileService } from "@/services/profileService";
@@ -127,6 +127,26 @@ export default function StoriesManager() {
     if (success) {
       setStories(stories.map(s => 
         s.id === story.id ? { ...s, is_active: !s.is_active } : s
+      ));
+    }
+  };
+
+  const handleToggleLink = async (story: Story) => {
+    const profileData = await ProfileService.getProfile(undefined, { forceRefresh: true });
+    if (!profileData) {
+      alert('Erro: Perfil não encontrado');
+      return;
+    }
+
+    const success = await StoryService.toggleStoryLink(
+      story.id,
+      !story.show_link,
+      profileData.username
+    );
+
+    if (success) {
+      setStories(stories.map(s => 
+        s.id === story.id ? { ...s, show_link: !s.show_link } : s
       ));
     }
   };
@@ -300,6 +320,17 @@ export default function StoriesManager() {
 
                 {/* Actions */}
                 <div className={styles.storyActions}>
+                  <button
+                    className={styles.actionButton}
+                    onClick={() => handleToggleLink(story)}
+                    title={story.show_link ? 'Desativar link' : 'Ativar link'}
+                  >
+                    {story.show_link ? (
+                      <Link2 size={18} color="#1877f2" />
+                    ) : (
+                      <Link2Off size={18} color="#6e6e6e" />
+                    )}
+                  </button>
                   <button
                     className={styles.actionButton}
                     onClick={() => handleToggleActive(story)}

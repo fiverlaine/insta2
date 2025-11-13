@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { authenticateAdmin, getAdminEmail, isAdminAuthenticated } from '@/utils/adminAuth';
+import { Lock, Mail, Eye, EyeOff, Shield, ArrowRight } from 'lucide-react';
 import styles from './AdminLogin.module.css';
 
 export default function AdminLogin() {
@@ -37,19 +38,32 @@ export default function AdminLogin() {
 
   return (
     <div className={styles.container}>
+      <div className={styles.background}>
+        <div className={styles.gradient1} />
+        <div className={styles.gradient2} />
+        <div className={styles.gradient3} />
+      </div>
+      
       <div className={styles.card}>
-        <div className={styles.header}>
-          <span className={styles.badge}>
-            <span className={styles.badgeIcon} /> Painel restrito
-          </span>
+        <div className={styles.cardHeader}>
+          <div className={styles.logoContainer}>
+            <Shield size={32} className={styles.logoIcon} />
+          </div>
+          <div className={styles.badge}>
+            <span className={styles.badgeIcon} />
+            <span>Painel Restrito</span>
+          </div>
           <h1 className={styles.title}>Acessar Admin</h1>
-          <p className={styles.subtitle}>Faça login para gerenciar mensagens, posts e stories.</p>
+          <p className={styles.subtitle}>
+            Faça login para gerenciar mensagens, posts e stories
+          </p>
         </div>
 
         <form className={styles.form} onSubmit={handleSubmit}>
           <div className={styles.formGroup}>
             <label className={styles.label} htmlFor="admin-email">
-              E-mail
+              <Mail size={16} />
+              <span>E-mail</span>
             </label>
             <input
               id="admin-email"
@@ -60,12 +74,14 @@ export default function AdminLogin() {
               onChange={(event) => setEmail(event.target.value)}
               autoComplete="email"
               required
+              disabled={submitting}
             />
           </div>
 
           <div className={styles.formGroup}>
             <label className={styles.label} htmlFor="admin-password">
-              Senha
+              <Lock size={16} />
+              <span>Senha</span>
             </label>
             <div className={styles.inputWrapper}>
               <input
@@ -77,30 +93,57 @@ export default function AdminLogin() {
                 onChange={(event) => setPassword(event.target.value)}
                 autoComplete="current-password"
                 required
+                disabled={submitting}
               />
               <button
                 type="button"
                 className={styles.togglePassword}
                 onClick={() => setShowPassword((prev) => !prev)}
+                disabled={submitting}
               >
-                {showPassword ? 'Ocultar' : 'Mostrar'}
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
           </div>
 
-          {error && <div className={styles.error}>{error}</div>}
+          {error && (
+            <div className={styles.error}>
+              <Shield size={16} />
+              <span>{error}</span>
+            </div>
+          )}
 
-          <button type="submit" className={styles.submitButton} disabled={submitting}>
-            {submitting ? 'Entrando...' : 'Entrar no painel'}
+          <button 
+            type="submit" 
+            className={styles.submitButton} 
+            disabled={submitting}
+          >
+            {submitting ? (
+              <>
+                <div className={styles.spinner} />
+                <span>Entrando...</span>
+              </>
+            ) : (
+              <>
+                <span>Entrar no painel</span>
+                <ArrowRight size={18} />
+              </>
+            )}
           </button>
         </form>
 
-        <p className={styles.hint}>
-          ⚠️ Acesso exclusivo do administrador.<br />
-          Use o e-mail <strong>{getAdminEmail()}</strong> com a senha fornecida pelo time técnico.
-        </p>
+        <div className={styles.hint}>
+          <Shield size={14} />
+          <div>
+            <p>
+              ⚠️ Acesso exclusivo do administrador.
+            </p>
+            <p>
+              Use o e-mail <strong>{getAdminEmail()}</strong> com a senha fornecida pelo time técnico.
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );
 }
-

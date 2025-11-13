@@ -1,7 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, Phone, Video, Send, Mic, Image as ImageIcon } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { profileData } from "@/mocks/profile";
+import { ProfileService, type ProfileSettings } from "@/services/profileService";
 import { ChatService } from "@/services/chatService";
 import { MediaService } from "@/services/mediaService";
 import type { Message, Conversation } from "@/lib/supabase";
@@ -18,11 +19,49 @@ export default function ChatScreen() {
   const [imageModal, setImageModal] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Carregar perfil do banco de dados (com fallback para mock)
+  const cachedProfile = useMemo(() => ProfileService.getCachedProfileSync(), []);
+  const [profile, setProfile] = useState<ProfileSettings | null>(cachedProfile);
+  
+  // Normalizar URL da imagem
+  const getImageUrl = (imagePath: string | undefined) => {
+    if (!imagePath) return profileData.avatar;
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+      return imagePath;
+    }
+    if (imagePath.startsWith('/assets/')) {
+      return imagePath.replace('/assets/', '/');
+    }
+    return imagePath;
+  };
+  
+  // Dados do perfil a serem usados (banco de dados ou mock)
+  const displayProfile = profile ? {
+    name: profile.name,
+    username: profile.username,
+    avatar: getImageUrl(profile.avatar_url),
+    followers: profile.followers_count,
+    posts: profile.posts_count
+  } : {
+    name: profileData.name,
+    username: profileData.username,
+    avatar: profileData.avatar,
+    followers: profileData.followers,
+    posts: profileData.posts
+  };
+
+  // Carregar perfil do banco de dados
+  useEffect(() => {
+    loadProfile();
+  }, []);
 
   // Carregar conversa e mensagens
   useEffect(() => {
-    loadConversation();
-  }, []);
+    if (displayProfile.name) {
+      loadConversation();
+    }
+  }, [displayProfile.name]);
 
   // Scroll para última mensagem
   useEffect(() => {
@@ -55,10 +94,21 @@ export default function ChatScreen() {
     };
   }, [conversation]);
 
+  const loadProfile = async () => {
+    try {
+      const data = await ProfileService.getProfile();
+      if (data) {
+        setProfile(data);
+      }
+    } catch (error) {
+      console.error("Erro ao carregar perfil:", error);
+    }
+  };
+
   const loadConversation = async () => {
     try {
       setLoading(true);
-      const conv = await ChatService.getOrCreateConversation(profileData.name);
+      const conv = await ChatService.getOrCreateConversation(displayProfile.name);
       
       if (conv) {
         setConversation(conv);
@@ -184,12 +234,12 @@ export default function ChatScreen() {
 
         <button className={styles.headerCenter} onClick={() => navigate('/')}>
           <div className={styles.headerAvatarContainer}>
-            <img src={profileData.avatar} alt="Avatar" className={styles.headerAvatar} />
+            <img src={displayProfile.avatar} alt="Avatar" className={styles.headerAvatar} />
             <div className={styles.gradientRing} />
           </div>
           <div className={styles.headerTextContainer}>
-            <span className={styles.headerName}>{profileData.name}</span>
-            <span className={styles.headerUsername}>{profileData.username}</span>
+            <span className={styles.headerName}>{displayProfile.name}</span>
+            <span className={styles.headerUsername}>{displayProfile.username}</span>
           </div>
         </button>
 
@@ -213,12 +263,12 @@ export default function ChatScreen() {
             {/* Introdução do perfil - sempre visível */}
             <div className={styles.profileIntro}>
               <div className={styles.profileAvatarContainer}>
-                <img src={profileData.avatar} alt="Avatar" className={styles.profileAvatar} />
+                <img src={displayProfile.avatar} alt="Avatar" className={styles.profileAvatar} />
               </div>
-              <span className={styles.profileName}>{profileData.name}</span>
-              <span className={styles.profileUsername}>{profileData.username}</span>
+              <span className={styles.profileName}>{displayProfile.name}</span>
+              <span className={styles.profileUsername}>{displayProfile.username}</span>
               <span className={styles.profileFollowers}>
-                {(profileData.followers / 1000).toFixed(1).replace(".", ",")} mil seguidores · {profileData.posts} posts
+                {(displayProfile.followers / 1000).toFixed(1).replace(".", ",")} mil seguidores · {displayProfile.posts} posts
               </span>
               <button className={styles.viewProfileButton} onClick={() => navigate('/')}>
                 <span className={styles.viewProfileText}>Ver perfil</span>
@@ -238,7 +288,7 @@ export default function ChatScreen() {
                      {/* Avatar para mensagens do admin */}
                      {msg.is_from_admin && (
                        <img 
-                         src={profileData.avatar} 
+                         src={displayProfile.avatar} 
                          alt="Avatar" 
                          className={styles.messageAvatar}
                        />

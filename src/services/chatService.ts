@@ -90,6 +90,21 @@ export class ChatService {
         return null;
       }
 
+      // Atualizar conversa: atualizar last_message_at e incrementar unread_count
+      const { data: convData } = await supabase
+        .from('conversations')
+        .select('unread_count')
+        .eq('id', conversation.id)
+        .single();
+
+      await supabase
+        .from('conversations')
+        .update({ 
+          last_message_at: new Date().toISOString(),
+          unread_count: (convData?.unread_count || 0) + 1
+        })
+        .eq('id', conversation.id);
+
       return data;
     } catch (error) {
       console.error('Erro no sendMessage:', error);
@@ -230,10 +245,13 @@ export class AdminChatService {
         return null;
       }
 
-      // Resetar contador de não lidas
+      // Atualizar conversa: resetar contador de não lidas e atualizar last_message_at
       await supabase
         .from('conversations')
-        .update({ unread_count: 0 })
+        .update({ 
+          unread_count: 0,
+          last_message_at: new Date().toISOString()
+        })
         .eq('id', conversationId);
 
       return data;

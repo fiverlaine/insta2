@@ -12,7 +12,12 @@ import {
   TrendingUp,
   LogOut,
   Settings,
-  Mail
+  Mail,
+  Sparkles,
+  Activity,
+  Clock,
+  ArrowRight,
+  Zap
 } from "lucide-react";
 import { logoutAdmin } from "@/utils/adminAuth";
 import { StoryService } from "@/services/storyService";
@@ -27,6 +32,7 @@ interface StatCard {
   icon: React.ReactNode;
   gradient: string;
   change?: string;
+  trend?: 'up' | 'down' | 'neutral';
 }
 
 export default function AdminPanelNew() {
@@ -43,6 +49,9 @@ export default function AdminPanelNew() {
 
   useEffect(() => {
     loadStats();
+    // Atualizar stats a cada 30 segundos
+    const interval = setInterval(loadStats, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   const loadStats = async () => {
@@ -89,8 +98,10 @@ export default function AdminPanelNew() {
   };
 
   const handleLogout = () => {
-    logoutAdmin();
-    navigate('/admin987654321/login');
+    if (confirm('Tem certeza que deseja sair?')) {
+      logoutAdmin();
+      navigate('/admin987654321/login');
+    }
   };
 
   const statCards: StatCard[] = [
@@ -99,42 +110,42 @@ export default function AdminPanelNew() {
       value: stats.totalPosts,
       icon: <LayoutDashboard size={24} />,
       gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      change: undefined
+      trend: 'neutral'
     },
     {
       title: 'Stories Ativos',
       value: stats.totalStories,
       icon: <Film size={24} />,
       gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-      change: undefined
+      trend: 'neutral'
     },
     {
       title: 'Views Únicos',
       value: stats.uniqueViews,
-      icon: <Eye size={24} />,
+      icon: <Sparkles size={24} />,
       gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-      change: '+12%'
+      trend: 'up'
     },
     {
       title: 'Total de Views',
       value: stats.totalViews,
       icon: <TrendingUp size={24} />,
       gradient: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
-      change: '+8%'
+      trend: 'up'
     },
     {
       title: 'Conversas',
       value: stats.totalConversations,
       icon: <Users size={24} />,
       gradient: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-      change: undefined
+      trend: 'neutral'
     },
     {
-      title: 'Não Lidas',
+      title: 'Mensagens Não Lidas',
       value: stats.unreadMessages,
       icon: <Mail size={24} />,
       gradient: 'linear-gradient(135deg, #ff0844 0%, #ffb199 100%)',
-      change: undefined
+      trend: stats.unreadMessages > 0 ? 'up' : 'neutral'
     }
   ];
 
@@ -145,8 +156,8 @@ export default function AdminPanelNew() {
       items: [
         {
           title: 'Gerenciar Perfil',
-          description: 'Editar informações do perfil',
-          icon: <User size={20} />,
+          description: 'Editar informações do perfil, avatar e bio',
+          icon: <User size={22} />,
           gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
           path: '/admin987654321/profile',
           badge: 0
@@ -154,15 +165,15 @@ export default function AdminPanelNew() {
         {
           title: 'Gerenciar Stories',
           description: 'Adicionar, editar e remover stories',
-          icon: <Film size={20} />,
+          icon: <Film size={22} />,
           gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
           path: '/admin987654321/stories',
           badge: 0
         },
         {
           title: 'Gerenciar Comentários',
-          description: 'Criar e moderar comentários',
-          icon: <MessageSquare size={20} />,
+          description: 'Criar e moderar comentários dos posts',
+          icon: <MessageSquare size={22} />,
           gradient: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
           path: '/admin987654321/comments',
           badge: 0
@@ -171,12 +182,12 @@ export default function AdminPanelNew() {
     },
     {
       title: 'Analytics',
-      description: 'Visualize métricas e estatísticas',
+      description: 'Visualize métricas e estatísticas detalhadas',
       items: [
         {
           title: 'Analytics de Stories',
-          description: 'Visualizações, países, dispositivos',
-          icon: <BarChart3 size={20} />,
+          description: 'Visualizações, países, dispositivos e muito mais',
+          icon: <BarChart3 size={22} />,
           gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
           path: '/admin987654321/analytics',
           badge: 0
@@ -185,12 +196,12 @@ export default function AdminPanelNew() {
     },
     {
       title: 'Comunicação',
-      description: 'Interaja com visitantes',
+      description: 'Interaja com visitantes em tempo real',
       items: [
         {
           title: 'Chat com Visitantes',
-          description: 'Responda mensagens em tempo real',
-          icon: <MessageCircle size={20} />,
+          description: 'Responda mensagens e interaja com leads',
+          icon: <MessageCircle size={22} />,
           gradient: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
           path: '/admin987654321/chat',
           badge: stats.unreadMessages > 0 ? stats.unreadMessages : 0
@@ -202,45 +213,94 @@ export default function AdminPanelNew() {
   return (
     <div className={styles.container}>
       {/* Header */}
-      <div className={styles.header}>
+      <header className={styles.header}>
         <div className={styles.headerContent}>
           <div className={styles.headerLeft}>
             <div className={styles.logoContainer}>
-              <LayoutDashboard size={32} className={styles.logoIcon} />
+              <LayoutDashboard size={28} className={styles.logoIcon} />
             </div>
-            <div>
+            <div className={styles.headerText}>
               <h1 className={styles.title}>Painel de Administração</h1>
-              <p className={styles.subtitle}>Bem-vindo, Admin</p>
+              <p className={styles.subtitle}>Gerenciamento completo da plataforma</p>
             </div>
           </div>
           <div className={styles.headerActions}>
-            <button className={styles.settingsButton} title="Configurações">
+            <button 
+              className={styles.settingsButton} 
+              title="Configurações"
+              onClick={() => alert('Configurações em breve')}
+            >
               <Settings size={20} />
             </button>
             <button 
               className={styles.logoutButton}
               onClick={handleLogout}
-              title="Sair"
+              title="Sair do painel"
             >
-              <LogOut size={20} />
+              <LogOut size={18} />
               <span>Sair</span>
             </button>
           </div>
         </div>
-      </div>
+      </header>
 
-      {/* Content */}
-      <div className={styles.content}>
+      {/* Main Content */}
+      <main className={styles.content}>
+        {/* Welcome Section */}
+        <section className={styles.welcomeSection}>
+          <div className={styles.welcomeContent}>
+            <div className={styles.welcomeText}>
+              <h2 className={styles.welcomeTitle}>
+                Bem-vindo ao Painel Admin
+              </h2>
+              <p className={styles.welcomeDescription}>
+                Gerencie seu conteúdo, visualize analytics e interaja com seus visitantes de forma eficiente.
+              </p>
+            </div>
+            <div className={styles.welcomeStats}>
+              <div className={styles.welcomeStat}>
+                <Activity size={20} />
+                <div>
+                  <span className={styles.welcomeStatValue}>{stats.totalViews}</span>
+                  <span className={styles.welcomeStatLabel}>Views Totais</span>
+                </div>
+              </div>
+              <div className={styles.welcomeStat}>
+                <Users size={20} />
+                <div>
+                  <span className={styles.welcomeStatValue}>{stats.totalConversations}</span>
+                  <span className={styles.welcomeStatLabel}>Conversas</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* Stats Grid */}
         <section className={styles.section}>
           <div className={styles.sectionHeader}>
-            <h2 className={styles.sectionTitle}>Visão Geral</h2>
-            <p className={styles.sectionSubtitle}>Estatísticas em tempo real</p>
+            <div>
+              <h2 className={styles.sectionTitle}>Visão Geral</h2>
+              <p className={styles.sectionSubtitle}>Estatísticas em tempo real do seu conteúdo</p>
+            </div>
+            <button 
+              className={styles.refreshButton}
+              onClick={loadStats}
+              disabled={loading}
+              title="Atualizar estatísticas"
+            >
+              <Zap size={16} />
+              <span>Atualizar</span>
+            </button>
           </div>
           
           <div className={styles.statsGrid}>
             {statCards.map((stat, index) => (
-              <div key={index} className={styles.statCard}>
+              <div 
+                key={index} 
+                className={styles.statCard}
+                style={{ animationDelay: `${index * 0.1}s` }}
+              >
                 <div 
                   className={styles.statIconContainer}
                   style={{ background: stat.gradient }}
@@ -251,13 +311,22 @@ export default function AdminPanelNew() {
                   <p className={styles.statTitle}>{stat.title}</p>
                   <div className={styles.statValueRow}>
                     <h3 className={styles.statValue}>
-                      {loading ? '...' : stat.value}
+                      {loading ? (
+                        <span className={styles.loadingDots}>...</span>
+                      ) : (
+                        typeof stat.value === 'number' 
+                          ? stat.value.toLocaleString('pt-BR')
+                          : stat.value
+                      )}
                     </h3>
-                    {stat.change && (
-                      <span className={styles.statChange}>{stat.change}</span>
+                    {stat.trend && stat.trend !== 'neutral' && (
+                      <span className={`${styles.statTrend} ${styles[`statTrend${stat.trend === 'up' ? 'Up' : 'Down'}`]}`}>
+                        {stat.trend === 'up' ? '↑' : '↓'}
+                      </span>
                     )}
                   </div>
                 </div>
+                <div className={styles.statGlow} style={{ background: stat.gradient }} />
               </div>
             ))}
           </div>
@@ -267,8 +336,10 @@ export default function AdminPanelNew() {
         {managementSections.map((section, sectionIndex) => (
           <section key={sectionIndex} className={styles.section}>
             <div className={styles.sectionHeader}>
-              <h2 className={styles.sectionTitle}>{section.title}</h2>
-              <p className={styles.sectionSubtitle}>{section.description}</p>
+              <div>
+                <h2 className={styles.sectionTitle}>{section.title}</h2>
+                <p className={styles.sectionSubtitle}>{section.description}</p>
+              </div>
             </div>
             
             <div className={styles.cardsGrid}>
@@ -278,6 +349,7 @@ export default function AdminPanelNew() {
                   className={styles.managementCard}
                   onClick={() => navigate(item.path)}
                 >
+                  <div className={styles.cardGradient} style={{ background: item.gradient }} />
                   <div 
                     className={styles.cardIconContainer}
                     style={{ background: item.gradient }}
@@ -285,13 +357,17 @@ export default function AdminPanelNew() {
                     {item.icon}
                   </div>
                   <div className={styles.cardContent}>
-                    <h3 className={styles.cardTitle}>{item.title}</h3>
+                    <div className={styles.cardHeader}>
+                      <h3 className={styles.cardTitle}>{item.title}</h3>
+                      {item.badge && item.badge > 0 && (
+                        <div className={styles.cardBadge}>{item.badge}</div>
+                      )}
+                    </div>
                     <p className={styles.cardDescription}>{item.description}</p>
                   </div>
-                  {item.badge && item.badge > 0 && (
-                    <div className={styles.cardBadge}>{item.badge}</div>
-                  )}
-                  <div className={styles.cardArrow}>→</div>
+                  <div className={styles.cardArrow}>
+                    <ArrowRight size={20} />
+                  </div>
                 </button>
               ))}
             </div>
@@ -301,8 +377,10 @@ export default function AdminPanelNew() {
         {/* Quick Actions */}
         <section className={styles.section}>
           <div className={styles.sectionHeader}>
-            <h2 className={styles.sectionTitle}>Ações Rápidas</h2>
-            <p className={styles.sectionSubtitle}>Acesso rápido às funções mais usadas</p>
+            <div>
+              <h2 className={styles.sectionTitle}>Ações Rápidas</h2>
+              <p className={styles.sectionSubtitle}>Acesso rápido às funções mais usadas</p>
+            </div>
           </div>
           
           <div className={styles.quickActionsGrid}>
@@ -352,13 +430,16 @@ export default function AdminPanelNew() {
         </section>
 
         {/* Footer */}
-        <div className={styles.footer}>
+        <footer className={styles.footer}>
           <p className={styles.footerText}>
-            Instagram Profissional © 2025 · Painel Admin v2.0
+            © 2025 Instagram Profissional · Painel Admin v3.0 · Desenvolvido com ❤️
           </p>
-        </div>
-      </div>
+          <div className={styles.footerLinks}>
+            <Clock size={14} />
+            <span>Última atualização: {new Date().toLocaleTimeString('pt-BR')}</span>
+          </div>
+        </footer>
+      </main>
     </div>
   );
 }
-

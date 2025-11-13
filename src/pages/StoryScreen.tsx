@@ -1,5 +1,5 @@
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { X, Heart, Send, Volume2, VolumeX } from "lucide-react";
+import { X, Heart, Send, Volume2, VolumeX, Link2 } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useFollow } from "@/hooks/useFollow";
 import { useStoryLike } from "@/hooks/useStoryLike";
@@ -670,13 +670,13 @@ export default function StoryScreen() {
           />
         </div>
 
-        {/* Link invisível sobre "LINK DO CÓDIGO" nos stories 3, 4 e 7 (order_index 2, 3 e 6) */}
-        {currentStory && (currentStory.order_index === 2 || currentStory.order_index === 3 || currentStory.order_index === 6) && profile?.link && (
+        {/* Botão de link visual igual ao Instagram - exibido quando show_link está ativo */}
+        {currentStory && currentStory.show_link && profile?.link && (
           <a
             href={`https://${profile.link}`}
             target="_blank"
             rel="noopener noreferrer"
-            className={styles.invisibleLinkButton}
+            className={styles.storyLinkButton}
             onClick={async (e) => {
               e.stopPropagation(); // Evita pausar o story
               recordPlaybackEvent({
@@ -707,7 +707,10 @@ export default function StoryScreen() {
               }
             }}
             title="Abrir link"
-          />
+          >
+            <Link2 className={styles.storyLinkIcon} size={16} />
+            <span className={styles.storyLinkText}>LINK DO CÓDIGO</span>
+          </a>
         )}
 
         <div className={styles.footer}>

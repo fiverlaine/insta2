@@ -1,101 +1,126 @@
 .container {
-  width: 100vw;
-  height: 100vh;
-  background-color: #000;
+  width: 100%;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #16213e 100%);
   color: #fff;
   display: flex;
   flex-direction: column;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  overflow: hidden;
 }
 
-/* Header */
 .header {
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 16px 20px;
-  border-bottom: 0.5px solid #262626;
+  padding: 24px 32px;
+  background: rgba(10, 10, 15, 0.8);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   position: sticky;
   top: 0;
-  background-color: #000;
   z-index: 100;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
 }
 
 .backButton {
-  background: none;
-  border: none;
-  color: #fff;
-  cursor: pointer;
-  padding: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: opacity 0.2s;
+  cursor: pointer;
+  color: #fff;
+  transition: all 0.3s ease;
 }
 
 .backButton:hover {
-  opacity: 0.7;
+  background: rgba(255, 255, 255, 0.12);
+  transform: translateX(-2px);
 }
 
 .title {
-  font-size: 20px;
-  font-weight: 600;
+  font-size: 24px;
+  font-weight: 700;
   color: #fff;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
-/* Upload Section */
 .uploadSection {
-  padding: 24px 20px;
-  border-bottom: 0.5px solid #262626;
+  padding: 32px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
+  max-width: 1600px;
+  width: 100%;
+  margin: 0 auto;
 }
 
 .uploadButton {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  padding: 14px 24px;
+  gap: 12px;
+  padding: 16px 28px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: #fff;
   border: none;
-  border-radius: 10px;
+  border-radius: 12px;
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
-  transition: opacity 0.2s;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  max-width: 300px;
 }
 
 .uploadButton:hover:not(:disabled) {
-  opacity: 0.9;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
 }
 
 .uploadButton:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+  transform: none;
 }
 
 .uploadInfo {
   font-size: 13px;
-  color: #a8a8a8;
-  text-align: center;
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 500;
 }
 
-/* Stories List */
 .storiesList {
   flex: 1;
-  padding: 20px;
+  padding: 32px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
   overflow-y: auto;
+  max-width: 1600px;
+  width: 100%;
+  margin: 0 auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+.storiesList::-webkit-scrollbar {
+  width: 6px;
+}
+
+.storiesList::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.storiesList::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
 }
 
 .loading,
@@ -104,62 +129,72 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 60px 20px;
-  gap: 8px;
-  color: #a8a8a8;
+  padding: 80px 20px;
+  gap: 12px;
+  color: rgba(255, 255, 255, 0.5);
 }
 
 .empty p {
   font-size: 14px;
-  color: #6e6e6e;
+  color: rgba(255, 255, 255, 0.4);
+  margin: 0;
 }
 
 .listHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 4px 12px;
-  border-bottom: 0.5px solid #262626;
-  margin-bottom: 8px;
+  padding: 0 4px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 12px;
 }
 
 .count {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   color: #fff;
 }
 
 .activeCount {
-  font-size: 13px;
-  color: #4150F7;
-  font-weight: 500;
+  font-size: 14px;
+  color: #667eea;
+  font-weight: 600;
 }
 
-/* Story Item */
 .storyItem {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 12px;
-  background-color: #0a0a0a;
-  border: 1px solid #262626;
-  border-radius: 12px;
-  transition: background-color 0.2s;
+  gap: 20px;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  transition: all 0.3s ease;
+  cursor: move;
 }
 
 .storyItem:hover {
-  background-color: #121212;
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.storyItem:active {
+  cursor: grabbing;
 }
 
 .storyPreview {
   position: relative;
-  width: 60px;
-  height: 106px;
-  border-radius: 8px;
+  width: 70px;
+  height: 124px;
+  border-radius: 12px;
   overflow: hidden;
   flex-shrink: 0;
-  background-color: #1a1a1a;
+  background: rgba(0, 0, 0, 0.3);
+  border: 2px solid rgba(255, 255, 255, 0.1);
 }
 
 .storyThumbnail {
@@ -173,76 +208,83 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background-color: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.7);
   border-radius: 50%;
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
+  backdrop-filter: blur(10px);
 }
 
 .storyInfo {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
   min-width: 0;
 }
 
 .storyMeta {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
+  flex-wrap: wrap;
 }
 
 .storyType {
   display: flex;
   align-items: center;
-  gap: 4px;
-  font-size: 13px;
+  gap: 6px;
+  font-size: 14px;
   color: #fff;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .storyDuration {
   font-size: 12px;
-  color: #a8a8a8;
-  background-color: #1a1a1a;
-  padding: 2px 8px;
-  border-radius: 4px;
+  color: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.1);
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-weight: 500;
 }
 
 .storyOrder {
   font-size: 12px;
-  color: #6e6e6e;
+  color: rgba(255, 255, 255, 0.4);
+  font-weight: 500;
 }
 
 .storyDate {
-  font-size: 12px;
-  color: #6e6e6e;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.5);
 }
 
 .storyActions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  flex-shrink: 0;
 }
 
 .actionButton {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 6px;
-  transition: background-color 0.2s;
+  cursor: pointer;
+  transition: all 0.3s ease;
 }
 
 .actionButton:hover:not(:disabled) {
-  background-color: #1a1a1a;
+  background: rgba(255, 255, 255, 0.12);
+  transform: scale(1.1);
 }
 
 .actionButton:disabled {
@@ -251,71 +293,88 @@
 }
 
 .dragHandle {
-  background: none;
-  border: none;
-  cursor: grab;
-  padding: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 6px;
-  transition: background-color 0.2s;
+  cursor: grab;
+  transition: all 0.3s ease;
+  color: rgba(255, 255, 255, 0.5);
 }
 
 .dragHandle:hover {
-  background-color: #1a1a1a;
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.8);
 }
 
 .dragHandle:active {
   cursor: grabbing;
 }
 
-.storyItem[draggable="true"] {
-  cursor: move;
-  transition: opacity 0.2s, transform 0.2s;
-}
-
-.storyItem[draggable="true"]:hover {
-  transform: scale(1.01);
-}
-
-.storyItem[draggable="true"]:active {
-  opacity: 0.7;
-}
-
 .inactiveBadge {
   position: absolute;
-  top: 12px;
-  right: 12px;
-  background-color: rgba(255, 59, 48, 0.2);
+  top: 16px;
+  right: 16px;
+  background: rgba(255, 59, 48, 0.2);
   color: #ff3b30;
   font-size: 11px;
-  font-weight: 600;
-  padding: 4px 8px;
-  border-radius: 4px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 8px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  border: 1px solid rgba(255, 59, 48, 0.3);
 }
 
-/* Info Footer */
 .infoFooter {
-  padding: 20px;
-  border-top: 0.5px solid #262626;
+  padding: 24px 32px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  background-color: #0a0a0a;
+  gap: 10px;
+  background: rgba(10, 10, 15, 0.5);
+  backdrop-filter: blur(10px);
+  max-width: 1600px;
+  width: 100%;
+  margin: 0 auto;
 }
 
 .infoFooter p {
   font-size: 13px;
-  color: #a8a8a8;
+  color: rgba(255, 255, 255, 0.6);
   margin: 0;
+  line-height: 1.6;
 }
 
 .infoFooter strong {
-  color: #fff;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 600;
 }
 
-/* StoriesManager sempre em formato desktop - sem restrições mobile */
+@media (max-width: 768px) {
+  .header {
+    padding: 20px;
+  }
 
+  .uploadSection {
+    padding: 24px 20px;
+  }
+
+  .storiesList {
+    padding: 24px 20px;
+  }
+
+  .storyItem {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .storyActions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}

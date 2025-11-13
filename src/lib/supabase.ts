@@ -50,6 +50,7 @@ export interface Story {
   duration: number;
   order_index: number;
   is_active: boolean;
+  show_link: boolean;
   created_at: string;
   updated_at: string;
 }

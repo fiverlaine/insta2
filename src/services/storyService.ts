@@ -9,6 +9,7 @@ export interface Story {
   duration: number;
   order_index: number;
   is_active: boolean;
+  show_link: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -97,6 +98,7 @@ export class StoryService {
           duration: duration,
           order_index: nextOrder,
           is_active: true,
+          show_link: false,
           thumbnail: thumbnail || null,
         })
         .select()
@@ -259,6 +261,38 @@ export class StoryService {
       return true;
     } catch (error) {
       console.error('Erro no toggleStoryActive:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Ativar/Desativar link no story
+   */
+  static async toggleStoryLink(
+    storyId: string,
+    showLink: boolean,
+    profileUsername: string
+  ): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('stories')
+        .update({
+          show_link: showLink,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', storyId);
+
+      if (error) {
+        console.error('Erro ao atualizar show_link do story:', error);
+        return false;
+      }
+
+      // Limpar cache após atualizar
+      this.clearCache(profileUsername);
+
+      return true;
+    } catch (error) {
+      console.error('Erro no toggleStoryLink:', error);
       return false;
     }
   }
