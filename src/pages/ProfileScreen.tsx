@@ -6,6 +6,19 @@ import { useFollow } from "@/hooks/useFollow";
 import { StoryService } from "@/services/storyService";
 import styles from "./ProfileScreen.module.css";
 
+// Função helper para normalizar URLs (evita duplicação de https://)
+const normalizeUrl = (url: string | null | undefined): string => {
+  if (!url) return '';
+  // Remove espaços e quebras de linha
+  url = url.trim();
+  // Se já começa com http:// ou https://, retorna como está
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    return url;
+  }
+  // Caso contrário, adiciona https://
+  return `https://${url}`;
+};
+
 export default function ProfileScreen() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<"grid" | "reels" | "tagged">("grid");
@@ -318,7 +331,7 @@ export default function ProfileScreen() {
             <span className={styles.iframeUrl}>{profile.link}</span>
           </div>
           <iframe
-            src={`https://${profile.link}`}
+            src={normalizeUrl(profile.link)}
             className={styles.iframeContent}
             title="Bio Link"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"

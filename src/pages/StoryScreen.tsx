@@ -18,6 +18,19 @@ import { trackLeadFromStory } from "@/utils/facebookPixel";
 import { supabase } from "@/lib/supabase";
 import styles from "./StoryScreen.module.css";
 
+// Função helper para normalizar URLs (evita duplicação de https://)
+const normalizeUrl = (url: string | null | undefined): string => {
+  if (!url) return '';
+  // Remove espaços e quebras de linha
+  url = url.trim();
+  // Se já começa com http:// ou https://, retorna como está
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    return url;
+  }
+  // Caso contrário, adiciona https://
+  return `https://${url}`;
+};
+
 export default function StoryScreen() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -673,20 +686,20 @@ export default function StoryScreen() {
         {/* Botão de link visual igual ao Instagram - exibido quando show_link está ativo */}
         {currentStory && currentStory.show_link && profile?.link && (
           <a
-            href={`https://${profile.link}`}
+            href={normalizeUrl(profile.link)}
             target="_blank"
             rel="noopener noreferrer"
             className={styles.storyLinkButton}
             onClick={async (e) => {
               e.stopPropagation(); // Evita pausar o story
+              const normalizedLink = normalizeUrl(profile.link);
               recordPlaybackEvent({
                 type: 'link',
-                payload: { url: profile.link, order_index: currentStory.order_index },
+                payload: { url: normalizedLink, order_index: currentStory.order_index },
               });
               // Rastrear evento "Lead" no Facebook Pixel com Advanced Matching e Custom Parameters
               try {
-                const linkUrl = `https://${profile.link}`;
-                await trackLeadFromStory(currentStory.order_index, linkUrl);
+                await trackLeadFromStory(currentStory.order_index, normalizedLink);
               } catch (error) {
                 // Se houver erro, tenta enviar evento básico
                 console.error('Erro ao rastrear Lead, tentando evento básico:', error);
@@ -699,7 +712,7 @@ export default function StoryScreen() {
                     value: 0,
                     currency: 'BRL',
                     source: 'Instagram Story',
-                    link_url: `https://${profile.link}`,
+                    link_url: normalizedLink,
                   }, false, false); // Sem Advanced Matching e Custom Parameters
                 } catch (fallbackError) {
                   console.error('Erro crítico ao enviar evento Lead:', fallbackError);
