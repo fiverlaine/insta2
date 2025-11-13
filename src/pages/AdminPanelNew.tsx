@@ -8,7 +8,6 @@ import {
   BarChart3, 
   MessageSquare,
   Users,
-  Eye,
   TrendingUp,
   LogOut,
   Settings,
