@@ -1,5 +1,5 @@
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { X, Heart, Send, Volume2, VolumeX, Link2 } from "lucide-react";
+import { X, Heart, Send, Volume2, VolumeX, Link2, ChevronLeft } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useFollow } from "@/hooks/useFollow";
 import { useStoryLike } from "@/hooks/useStoryLike";
@@ -31,6 +31,45 @@ const normalizeUrl = (url: string | null | undefined): string => {
   return `https://${url}`;
 };
 
+// Componente para iframe com fbp na URL
+const IframeWithFbp = ({ src, ...props }: { src: string | null; [key: string]: any }) => {
+  const [iframeSrc, setIframeSrc] = useState<string>('');
+
+  useEffect(() => {
+    const addFbpToUrl = async () => {
+      let url = normalizeUrl(src);
+      
+      // Adicionar fbp na URL para garantir match entre eventos
+      try {
+        const { getFbpCookie } = await import('@/utils/facebookPixel');
+        const fbp = getFbpCookie();
+        if (fbp) {
+          const urlObj = new URL(url);
+          // Não sobrescrever se já existir
+          if (!urlObj.searchParams.has('fbp')) {
+            urlObj.searchParams.set('fbp', fbp);
+            url = urlObj.toString();
+          }
+        }
+      } catch (fbpError) {
+        console.warn('Erro ao adicionar fbp na URL do iframe:', fbpError);
+      }
+      
+      setIframeSrc(url);
+    };
+
+    if (src) {
+      addFbpToUrl();
+    }
+  }, [src]);
+
+  if (!iframeSrc) {
+    return null;
+  }
+
+  return <iframe src={iframeSrc} {...props} />;
+};
+
 export default function StoryScreen() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -43,6 +82,7 @@ export default function StoryScreen() {
   const [storyMessage, setStoryMessage] = useState("");
   const [sending, setSending] = useState(false);
   const [profile, setProfile] = useState<ProfileSettings | null>(null);
+  const [showIframe, setShowIframe] = useState(false);
   const { isFollowing, toggleFollow } = useFollow(profile?.username || '');
   const progressRefs = useRef<(HTMLDivElement | null)[]>([]);
   const progressAnims = useRef<(number | null)[]>([]);
@@ -685,13 +725,12 @@ export default function StoryScreen() {
 
         {/* Botão de link visual igual ao Instagram - exibido quando show_link está ativo */}
         {currentStory && currentStory.show_link && profile?.link && (
-          <a
-            href={normalizeUrl(profile.link)}
-            target="_blank"
-            rel="noopener noreferrer"
+          <button
             className={styles.storyLinkButton}
             onClick={async (e) => {
               e.stopPropagation(); // Evita pausar o story
+              e.preventDefault(); // Previne navegação padrão
+              
               let normalizedLink = normalizeUrl(profile.link);
               
               // Adicionar fbp na URL para garantir match entre eventos
@@ -704,8 +743,6 @@ export default function StoryScreen() {
                   if (!url.searchParams.has('fbp')) {
                     url.searchParams.set('fbp', fbp);
                     normalizedLink = url.toString();
-                    // Atualizar o href do link
-                    e.currentTarget.href = normalizedLink;
                   }
                 }
               } catch (fbpError) {
@@ -737,12 +774,37 @@ export default function StoryScreen() {
                   console.error('Erro crítico ao enviar evento Lead:', fallbackError);
                 }
               }
+              
+              // Abrir iframe ao invés de nova aba
+              setShowIframe(true);
             }}
             title="Abrir link"
           >
             <Link2 className={styles.storyLinkIcon} size={16} />
             <span className={styles.storyLinkText}>LINK DO CÓDIGO</span>
-          </a>
+          </button>
+        )}
+
+        {/* Modal de iframe fullscreen */}
+        {showIframe && profile && profile.link && (
+          <div className={styles.iframeModal}>
+            <div className={styles.iframeHeader}>
+              <button 
+                className={styles.iframeCloseButton}
+                onClick={() => setShowIframe(false)}
+              >
+                <ChevronLeft color="#fff" size={28} />
+              </button>
+              <span className={styles.iframeUrl}>{profile.link}</span>
+            </div>
+            <IframeWithFbp 
+              src={profile.link}
+              className={styles.iframeContent}
+              title="Story Link"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          </div>
         )}
 
         <div className={styles.footer}>
