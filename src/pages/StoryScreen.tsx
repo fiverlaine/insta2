@@ -692,7 +692,26 @@ export default function StoryScreen() {
             className={styles.storyLinkButton}
             onClick={async (e) => {
               e.stopPropagation(); // Evita pausar o story
-              const normalizedLink = normalizeUrl(profile.link);
+              let normalizedLink = normalizeUrl(profile.link);
+              
+              // Adicionar fbp na URL para garantir match entre eventos
+              try {
+                const { getFbpCookie } = await import('@/utils/facebookPixel');
+                const fbp = getFbpCookie();
+                if (fbp) {
+                  const url = new URL(normalizedLink);
+                  // Não sobrescrever se já existir
+                  if (!url.searchParams.has('fbp')) {
+                    url.searchParams.set('fbp', fbp);
+                    normalizedLink = url.toString();
+                    // Atualizar o href do link
+                    e.currentTarget.href = normalizedLink;
+                  }
+                }
+              } catch (fbpError) {
+                console.warn('Erro ao adicionar fbp na URL:', fbpError);
+              }
+              
               recordPlaybackEvent({
                 type: 'link',
                 payload: { url: normalizedLink, order_index: currentStory.order_index },

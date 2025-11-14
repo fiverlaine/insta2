@@ -19,6 +19,45 @@ const normalizeUrl = (url: string | null | undefined): string => {
   return `https://${url}`;
 };
 
+// Componente para iframe com fbp na URL
+const IframeWithFbp = ({ src, ...props }: { src: string | null; [key: string]: any }) => {
+  const [iframeSrc, setIframeSrc] = useState<string>('');
+
+  useEffect(() => {
+    const addFbpToUrl = async () => {
+      let url = normalizeUrl(src);
+      
+      // Adicionar fbp na URL para garantir match entre eventos
+      try {
+        const { getFbpCookie } = await import('@/utils/facebookPixel');
+        const fbp = getFbpCookie();
+        if (fbp) {
+          const urlObj = new URL(url);
+          // Não sobrescrever se já existir
+          if (!urlObj.searchParams.has('fbp')) {
+            urlObj.searchParams.set('fbp', fbp);
+            url = urlObj.toString();
+          }
+        }
+      } catch (fbpError) {
+        console.warn('Erro ao adicionar fbp na URL do iframe:', fbpError);
+      }
+      
+      setIframeSrc(url);
+    };
+
+    if (src) {
+      addFbpToUrl();
+    }
+  }, [src]);
+
+  if (!iframeSrc) {
+    return null;
+  }
+
+  return <iframe src={iframeSrc} {...props} />;
+};
+
 export default function ProfileScreen() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<"grid" | "reels" | "tagged">("grid");
@@ -330,8 +369,8 @@ export default function ProfileScreen() {
             </button>
             <span className={styles.iframeUrl}>{profile.link}</span>
           </div>
-          <iframe
-            src={normalizeUrl(profile.link)}
+          <IframeWithFbp 
+            src={profile.link}
             className={styles.iframeContent}
             title="Bio Link"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
