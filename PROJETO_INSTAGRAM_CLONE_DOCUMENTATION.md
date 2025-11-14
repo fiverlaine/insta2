@@ -858,7 +858,7 @@ const { isLiked, loading, toggleLike } = useStoryLike(storyId);
 **Arquivo**: `src/lib/supabase.ts`
 
 ```typescript
-const supabaseUrl = 'https://xqngslfzxszkwgtqtwua.supabase.co';
+const supabaseUrl = 'https://izuspwvgvozwdjzbrpvt.supabase.co';
 const supabaseAnonKey = '...';
 ```
 
@@ -930,7 +930,7 @@ O projeto implementa cache em múltiplas camadas:
 
 ### Facebook Pixel (Meta Pixel)
 
-**ID do Pixel**: `621469384370793`
+**ID do Pixel**: `25009624982012198`
 
 **Configuração**: `index.html`
 

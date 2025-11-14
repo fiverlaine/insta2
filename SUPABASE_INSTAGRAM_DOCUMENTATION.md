@@ -3,23 +3,23 @@
 ## 📋 Informações do Projeto
 
 ### Detalhes Gerais
-- **Nome do Projeto**: Clone Insta 2
-- **ID do Projeto**: `xqngslfzxszkwgtqtwua`
-- **Referência**: `xqngslfzxszkwgtqtwua`
-- **Organização ID**: `nytsrbaaodzzingcueuc`
+- **Nome do Projeto**: Clone Insta
+- **ID do Projeto**: `izuspwvgvozwdjzbrpvt`
+- **Referência**: `izuspwvgvozwdjzbrpvt`
+- **Organização ID**: `adsruqayqckschiycikl`
 - **Região**: `sa-east-1` (São Paulo, Brasil)
 - **Status**: `ACTIVE_HEALTHY`
-- **Data de Criação**: 2025-11-10T16:52:51.240927Z
+- **Data de Criação**: 2025-11-05T00:12:59.906465Z
 
 ### Banco de Dados
-- **Host**: `db.xqngslfzxszkwgtqtwua.supabase.co`
-- **Versão PostgreSQL**: `17.6.1.042`
+- **Host**: `db.izuspwvgvozwdjzbrpvt.supabase.co`
+- **Versão PostgreSQL**: `17.6.1.037`
 - **Engine PostgreSQL**: `17`
 - **Release Channel**: `ga` (General Availability)
 
 ### URLs e Chaves
-- **URL da API**: `https://xqngslfzxszkwgtqtwua.supabase.co`
-- **Chave Pública (Anon)**: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhxbmdzbGZ6eHN6a3dndHF0d3VhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI3OTM1NzEsImV4cCI6MjA3ODM2OTU3MX0.2-pE_EFaTwOQO4HuRPJ4QkxIoBN3SdmjoOkflJOGH_o`
+- **URL da API**: `https://izuspwvgvozwdjzbrpvt.supabase.co`
+- **Chave Pública (Anon)**: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml6dXNwd3Zndm96d2RqemJycHZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIzMDE1NzksImV4cCI6MjA3Nzg3NzU3OX0.0ktkBb-_OnYhqIdDcj15UQxIsArT6ZIU2oFnAHITRuo`
 - **Tipo**: Legacy anon API key (JWT-based)
 
 ---
@@ -69,7 +69,7 @@
 - `updated_at` (timestamptz, default: now()) - Data de atualização
 
 **RLS**: Habilitado
-**Linhas**: 5
+**Linhas**: 3
 **Chaves Estrangeiras**:
 - Referencia: `profile_settings.username`
 - Referenciada por: `comments.post_id`, `post_likes.post_id`
@@ -93,7 +93,7 @@
 - `updated_at` (timestamptz, default: now()) - Data de atualização
 
 **RLS**: Habilitado
-**Linhas**: 10
+**Linhas**: 24
 **Chaves Estrangeiras**:
 - Referencia: `profile_settings.username`
 - Referenciada por: `story_likes.story_id`, `story_views.story_id`
@@ -112,7 +112,7 @@
 - `updated_at` (timestamptz, default: now()) - Data de atualização
 
 **RLS**: Habilitado
-**Linhas**: 4
+**Linhas**: 12
 **Chaves Estrangeiras**:
 - Referencia: `profile_settings.username`
 
@@ -124,13 +124,13 @@
 **Colunas**:
 - `id` (uuid, PK) - Identificador único
 - `visitor_id` (text) - ID do visitante que curtiu
-- `post_id` (uuid) - ID do post (FK → posts.id)
+- `post_id` (text) - ID do post (FK → posts.id)
 - `is_liked` (boolean, default: true) - Status de curtida
 - `liked_at` (timestamptz, default: now()) - Data da curtida
 - `updated_at` (timestamptz, default: now()) - Data de atualização
 
 **RLS**: Habilitado
-**Linhas**: 0
+**Linhas**: 4
 **Chaves Estrangeiras**:
 - Referencia: `posts.id`
 
@@ -148,7 +148,7 @@
 - `updated_at` (timestamptz, default: now()) - Data de atualização
 
 **RLS**: Habilitado
-**Linhas**: 0
+**Linhas**: 2
 **Chaves Estrangeiras**:
 - Referencia: `stories.id`
 
@@ -167,7 +167,7 @@
 - `updated_at` (timestamptz, default: now()) - Data de atualização
 
 **RLS**: Habilitado
-**Linhas**: 0
+**Linhas**: 5
 **Chaves Estrangeiras**:
 - Referenciada por: `messages.conversation_id`
 
@@ -188,15 +188,15 @@
 - `media_duration` (integer, nullable) - Duração da mídia
 - `replied_to_story_media_url` (text, nullable) - URL da mídia do story respondido
 - `replied_to_story_media_type` (text, nullable) - Tipo de mídia do story respondido
-- `replied_to_story_id` (text, nullable) - ID do story respondido
+- `replied_to_story_id` (uuid, nullable) - ID do story respondido (FK → stories.id)
 - `replied_to_story_thumbnail` (text, nullable) - Miniatura do story respondido
 - `created_at` (timestamptz, default: now()) - Data de criação
 - `updated_at` (timestamptz, default: now()) - Data de atualização
 
 **RLS**: Habilitado
-**Linhas**: 0
+**Linhas**: 10
 **Chaves Estrangeiras**:
-- Referencia: `conversations.id`
+- Referencia: `conversations.id`, `stories.id` (via `replied_to_story_id`)
 
 ---
 
@@ -205,21 +205,24 @@
 
 **Colunas**:
 - `id` (uuid, PK) - Identificador único
-- `post_id` (uuid) - ID do post (FK → posts.id)
+- `post_id` (text) - ID do post (FK → posts.id)
 - `parent_comment_id` (uuid, nullable) - ID do comentário pai (FK → comments.id) - permite respostas
 - `username` (text) - Nome de usuário do comentador
 - `avatar_url` (text, nullable) - URL do avatar do comentador
 - `is_verified` (boolean, default: false) - Status de verificação
 - `text` (text) - Texto do comentário
+- `image_url` (text, nullable) - URL da imagem anexada ao comentário (opcional)
 - `likes_count` (integer, default: 0) - Contador de curtidas
-- `time_ago` (text, default: 'Agora') - Tempo relativo
+- `time_ago` (text) - Tempo relativo
 - `created_at` (timestamptz, default: now()) - Data de criação
 - `updated_at` (timestamptz, default: now()) - Data de atualização
 
 **RLS**: Habilitado
-**Linhas**: 0
+**Linhas**: 28
 **Chaves Estrangeiras**:
 - Referencia: `posts.id`, `comments.id` (self-reference para respostas)
+
+**Nota**: A tabela `comments` possui um campo adicional `image_url` (text, nullable) que permite anexar imagens aos comentários. O campo `post_id` é do tipo `text` no banco de dados.
 
 ---
 
@@ -270,7 +273,7 @@
 - `updated_at` (timestamptz, default: now()) - Data de atualização
 
 **RLS**: Habilitado
-**Linhas**: 0
+**Linhas**: 47
 **Chaves Estrangeiras**:
 - Referencia: `stories.id`
 
@@ -295,7 +298,7 @@ SELECT post_id,
     count(*) FILTER (WHERE (parent_comment_id IS NULL)) AS comments_count,
     count(*) FILTER (WHERE (parent_comment_id IS NOT NULL)) AS replies_count,
     count(*) AS total_count,
-    COALESCE(sum(likes_count), (0)::bigint) AS total_likes,
+    sum(likes_count) AS total_likes,
     max(created_at) AS last_comment_at
 FROM comments
 GROUP BY post_id;
@@ -328,7 +331,8 @@ GROUP BY post_id;
 
 **Definição SQL**:
 ```sql
-SELECT story_id,
+SELECT 
+    story_id,
     count(DISTINCT fingerprint) AS unique_views,
     sum(session_count) AS total_views,
     count(DISTINCT ip_address) AS unique_ips,
@@ -338,20 +342,28 @@ SELECT story_id,
     count(DISTINCT device_type) AS device_types_count,
     max(last_viewed_at) AS last_viewed_at,
     min(first_viewed_at) AS first_viewed_at,
-    sum(session_count) FILTER (WHERE (last_viewed_at >= (timezone('utc'::text, now()) - '24:00:00'::interval))) AS views_last_24h,
+    sum(session_count) FILTER (
+        WHERE last_viewed_at >= (timezone('utc'::text, now()) - '24:00:00'::interval)
+    ) AS views_last_24h,
     sum(
         CASE
             WHEN completed THEN session_count
             ELSE 0
-        END) AS completed_views,
-        CASE
-            WHEN (sum(session_count) > 0) THEN round((((sum(
-            CASE
-                WHEN completed THEN session_count
-                ELSE 0
-            END))::numeric / (sum(session_count))::numeric) * (100)::numeric), 2)
-            ELSE (0)::numeric
-        END AS completion_rate_percentage,
+        END
+    ) AS completed_views,
+    CASE
+        WHEN sum(session_count) > 0 THEN 
+            round(
+                ((sum(
+                    CASE
+                        WHEN completed THEN session_count
+                        ELSE 0
+                    END
+                )::numeric / sum(session_count)::numeric) * 100::numeric), 
+                2
+            )
+        ELSE 0::numeric
+    END AS completion_rate_percentage,
     round(avg(watch_time_ms), 2) AS avg_watch_time_ms,
     round(avg(viewed_percentage), 2) AS avg_viewed_percentage,
     sum(watch_time_ms) AS total_watch_time_ms
@@ -475,23 +487,46 @@ Todas as tabelas têm RLS habilitado. As políticas seguem um padrão de acesso 
 
 ### Lista de Migrações Aplicadas
 
-1. **20241110_initial_schema** (20251110185917)
-   - Schema inicial do banco de dados
+1. **create_chat_system** (20251105024113)
+   - Criação do sistema de chat
 
-2. **20241110_seed_core_data** (20251110185957)
-   - Dados iniciais (seed data)
+2. **add_media_support_to_messages** (20251105031305)
+   - Adição de suporte a mídia nas mensagens
 
-3. **20241110_enable_realtime_chat** (20251110205833)
-   - Habilitação do Realtime para chat
+3. **create_stories_table** (20251105055826)
+   - Criação da tabela de stories
 
-4. **20241110_profile_username_cascade** (20251110215507)
-   - Configuração de cascade para username do perfil
+4. **create_likes_tables** (20251105150350)
+   - Criação das tabelas de likes
 
-5. **20251112_story_view_precision** (20251112021853)
-   - Ajustes de precisão nas visualizações de stories
+5. **create_profile_settings_and_posts** (20251105174148)
+   - Criação das tabelas de perfil e posts
 
-6. **add_show_link_to_stories** (20251113043623)
-   - Adição do campo `show_link` na tabela stories
+6. **add_story_reply_fields_to_messages** (20251106035233)
+   - Adição de campos para resposta a stories nas mensagens
+
+7. **add_thumbnail_to_stories** (20251106035355)
+   - Adição de thumbnail aos stories
+
+8. **create_story_views_table** (20251107165346)
+   - Criação da tabela de visualizações de stories
+
+9. **create_comments_table_with_image_support** (20251107235541)
+   - Criação da tabela de comentários com suporte a imagens
+
+10. **add_missing_fields_to_align_with_documentation** (aplicada)
+    - Adição de campos faltantes em `story_views` (session_id, session_count, watch_time_ms, viewed_percentage, completed, first_viewed_at, last_viewed_at, exit_reason, playback_events)
+    - Adição de campo `show_link` na tabela `stories`
+    - Adição de campo `comments_count` na tabela `posts`
+
+11. **update_story_view_stats_view** (aplicada)
+    - Atualização da view `story_view_stats` para incluir todos os campos de analytics
+
+12. **create_set_updated_at_function** (aplicada)
+    - Criação da função `set_updated_at()` conforme documentação
+
+13. **create_update_conversation_on_message_function** (aplicada)
+    - Criação da função `update_conversation_on_message()` conforme documentação
 
 ---
 
@@ -515,13 +550,21 @@ Todas as tabelas têm RLS habilitado. As políticas seguem um padrão de acesso 
   - **Remediação**: [Link](https://supabase.com/docs/guides/database/database-linter?lint=0010_security_definer_view)
 
 #### 🟡 AVISO: Function Search Path Mutable
+As seguintes funções têm `search_path` mutável, mas agora foram configuradas com `SET search_path = public`:
 - **Função**: `set_updated_at`
-  - **Problema**: Função com `search_path` mutável
+  - **Status**: Configurada com `SET search_path = public`
   - **Remediação**: [Link](https://supabase.com/docs/guides/database/database-linter?lint=0011_function_search_path_mutable)
 
 - **Função**: `update_conversation_on_message`
-  - **Problema**: Função com `search_path` mutável
+  - **Status**: Configurada com `SET search_path = public`
   - **Remediação**: [Link](https://supabase.com/docs/guides/database/database-linter?lint=0011_function_search_path_mutable)
+
+**Nota**: O banco de dados também possui outras funções similares para atualização de timestamps:
+- `handle_updated_at()`
+- `update_updated_at_column()`
+- `update_comments_updated_at()`
+- `update_story_views_updated_at()`
+- `update_conversation_last_message()`
 
 ### Performance
 
@@ -543,15 +586,21 @@ Múltiplas políticas permissivas nas seguintes tabelas podem impactar performan
 
 #### ℹ️ INFO: Unused Indexes
 Os seguintes índices não estão sendo utilizados e podem ser candidatos para remoção:
-- `stories_profile_username_idx` na tabela `stories`
-- `profile_follows_visitor_idx` na tabela `profile_follows`
-- `post_likes_visitor_idx` na tabela `post_likes`
-- `story_likes_visitor_idx` na tabela `story_likes`
-- `comments_created_at_idx` na tabela `comments`
-- `story_views_visitor_idx` na tabela `story_views`
-- `story_views_ip_idx` na tabela `story_views`
-- `story_views_viewed_at_idx` na tabela `story_views`
-- `idx_story_views_session_id` na tabela `story_views`
+- `idx_stories_profile_username` na tabela `stories`
+- `idx_stories_is_active` na tabela `stories`
+- `idx_profile_follows_visitor` na tabela `profile_follows`
+- `idx_posts_profile_username` na tabela `posts`
+- `idx_posts_is_active` na tabela `posts`
+- `idx_posts_order_index` na tabela `posts`
+- `idx_comments_created_at` na tabela `comments`
+- `idx_story_views_visitor_id` na tabela `story_views`
+- `idx_story_views_ip_address` na tabela `story_views`
+- `idx_story_views_viewed_at` na tabela `story_views`
+- `idx_messages_created_at` na tabela `messages`
+- `idx_messages_story_id` na tabela `messages`
+
+#### ℹ️ INFO: Unindexed Foreign Keys
+- `story_likes_story_id_fkey` na tabela `story_likes` sem índice cobrindo
 
 **Remediação**: [Link](https://supabase.com/docs/guides/database/database-linter?lint=0005_unused_index)
 
@@ -561,15 +610,15 @@ Os seguintes índices não estão sendo utilizados e podem ser candidatos para r
 
 ### Contagem de Registros por Tabela
 - `profile_settings`: 1 registro
-- `posts`: 5 registros
-- `stories`: 10 registros
-- `profile_follows`: 4 registros
-- `post_likes`: 0 registros
-- `story_likes`: 0 registros
-- `conversations`: 0 registros
-- `messages`: 0 registros
-- `comments`: 0 registros
-- `story_views`: 0 registros
+- `posts`: 3 registros
+- `stories`: 24 registros
+- `profile_follows`: 12 registros
+- `post_likes`: 4 registros
+- `story_likes`: 2 registros
+- `conversations`: 5 registros
+- `messages`: 10 registros
+- `comments`: 28 registros
+- `story_views`: 47 registros
 
 ---
 
@@ -690,8 +739,9 @@ O Supabase gera automaticamente tipos TypeScript para todas as tabelas. Os tipos
 ## 📅 Última Atualização
 
 **Data da Documentação**: 2025-01-27
-**Versão do Banco**: PostgreSQL 17.6.1.042
+**Versão do Banco**: PostgreSQL 17.6.1.037
 **Status do Projeto**: ACTIVE_HEALTHY
+**Última Sincronização**: Banco de dados alinhado com documentação completa
 
 ---
 

@@ -8,6 +8,7 @@ export interface Comment {
   avatar_url: string | null;
   is_verified: boolean;
   text: string;
+  image_url?: string | null;
   likes_count: number;
   time_ago: string;
   created_at: string;
@@ -22,6 +23,7 @@ export interface CommentInput {
   avatar_url?: string | null;
   is_verified?: boolean;
   text: string;
+  image_url?: string | null;
   likes_count?: number;
   time_ago?: string;
 }
@@ -85,6 +87,7 @@ export class CommentService {
         avatar_url: input.avatar_url || null,
         is_verified: input.is_verified || false,
         text: input.text,
+        image_url: input.image_url || null,
         likes_count: input.likes_count || 0,
         time_ago: input.time_ago || 'Agora'
       };

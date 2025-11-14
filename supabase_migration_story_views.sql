@@ -1,6 +1,6 @@
 -- Migration: Create Story Views Tracking Table
 -- Este arquivo pode ser executado manualmente no Supabase SQL Editor
--- URL: https://supabase.com/dashboard/project/xqngslfzxszkwgtqtwua/sql
+-- URL: https://supabase.com/dashboard/project/izuspwvgvozwdjzbrpvt/sql
 
 -- Cria tabela de visualizações de stories com tracking completo (idêntica ao schema atual)
 CREATE TABLE IF NOT EXISTS story_views (

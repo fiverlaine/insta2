@@ -1,7 +1,7 @@
 ## Infraestrutura Supabase
 
-- **Projeto ativo**: `xqngslfzxszkwgtqtwua`  
-  URL base da API: `https://xqngslfzxszkwgtqtwua.supabase.co`
+- **Projeto ativo**: `izuspwvgvozwdjzbrpvt`  
+  URL base da API: `https://izuspwvgvozwdjzbrpvt.supabase.co`
 - **Autenticacao**: a aplicacao roda inteiramente com a chave `anon`. Nao ha usuarios autenticados; as politicas de RLS concedem acesso total ao publico.
 - **Chave publica atual**: ver `src/lib/supabase.ts`. Sempre que rotacionar a chave, atualize esse arquivo.
 
@@ -73,7 +73,7 @@ Rodamos a migration `20241110_seed_core_data` (emitida via MCP) que insere:
 - `supabase_migration_story_views_precision.sql`: amplia `story_views` com campos de sessao, indices e policy de update publico.
 - `20241110_profile_username_cascade`: garante `ON UPDATE CASCADE` em `posts`, `stories` e `profile_follows`, permitindo renomear o username do perfil sem falhas de FK.
 
-> Sempre execute os scripts via editor SQL apontando para `https://supabase.com/dashboard/project/xqngslfzxszkwgtqtwua/sql`.
+> Sempre execute os scripts via editor SQL apontando para `https://supabase.com/dashboard/project/izuspwvgvozwdjzbrpvt/sql`.
 
 ## Proximos passos / Manutencao
 
