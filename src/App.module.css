@@ -1,0 +1,23 @@
+.appContainer {
+  width: 100%;
+  min-height: 100vh;
+  background-color: #000;
+  position: relative;
+}
+
+/* Desktop: largura de celular centralizada */
+@media (min-width: 768px) {
+  .appContainer {
+    max-width: 480px;
+    margin: 0 auto;
+    box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
+  }
+}
+
+/* Mobile: tela cheia */
+@media (max-width: 767px) {
+  .appContainer {
+    width: 100%;
+  }
+}
+
