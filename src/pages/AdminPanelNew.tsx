@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { 
-  LayoutDashboard, 
-  MessageCircle, 
-  Film, 
-  User, 
-  BarChart3, 
+import {
+  LayoutDashboard,
+  MessageCircle,
+  Film,
+  User,
+  BarChart3,
   MessageSquare,
   Users,
   TrendingUp,
@@ -59,7 +59,7 @@ export default function AdminPanelNew() {
 
       // Posts
       const posts = await ProfileService.getPosts();
-      
+
       // Stories - buscar perfil primeiro
       const profileData = await ProfileService.getProfile(undefined, { forceRefresh: true });
       if (!profileData) {
@@ -67,7 +67,7 @@ export default function AdminPanelNew() {
         return;
       }
       const stories = await StoryService.getActiveStories(profileData.username);
-      
+
       // Story Views
       const storyStats = await StoryViewTrackingService.getAllStoriesStats();
       let totalViews = 0;
@@ -224,14 +224,14 @@ export default function AdminPanelNew() {
             </div>
           </div>
           <div className={styles.headerActions}>
-            <button 
-              className={styles.settingsButton} 
+            <button
+              className={styles.settingsButton}
               title="Configurações"
-              onClick={() => alert('Configurações em breve')}
+              onClick={() => navigate('/admin987654321/settings')}
             >
               <Settings size={20} />
             </button>
-            <button 
+            <button
               className={styles.logoutButton}
               onClick={handleLogout}
               title="Sair do painel"
@@ -282,7 +282,7 @@ export default function AdminPanelNew() {
               <h2 className={styles.sectionTitle}>Visão Geral</h2>
               <p className={styles.sectionSubtitle}>Estatísticas em tempo real do seu conteúdo</p>
             </div>
-            <button 
+            <button
               className={styles.refreshButton}
               onClick={loadStats}
               disabled={loading}
@@ -292,15 +292,15 @@ export default function AdminPanelNew() {
               <span>Atualizar</span>
             </button>
           </div>
-          
+
           <div className={styles.statsGrid}>
             {statCards.map((stat, index) => (
-              <div 
-                key={index} 
+              <div
+                key={index}
                 className={styles.statCard}
                 style={{ animationDelay: `${index * 0.1}s` }}
               >
-                <div 
+                <div
                   className={styles.statIconContainer}
                   style={{ background: stat.gradient }}
                 >
@@ -313,7 +313,7 @@ export default function AdminPanelNew() {
                       {loading ? (
                         <span className={styles.loadingDots}>...</span>
                       ) : (
-                        typeof stat.value === 'number' 
+                        typeof stat.value === 'number'
                           ? stat.value.toLocaleString('pt-BR')
                           : stat.value
                       )}
@@ -340,7 +340,7 @@ export default function AdminPanelNew() {
                 <p className={styles.sectionSubtitle}>{section.description}</p>
               </div>
             </div>
-            
+
             <div className={styles.cardsGrid}>
               {section.items.map((item, itemIndex) => (
                 <button
@@ -349,7 +349,7 @@ export default function AdminPanelNew() {
                   onClick={() => navigate(item.path)}
                 >
                   <div className={styles.cardGradient} style={{ background: item.gradient }} />
-                  <div 
+                  <div
                     className={styles.cardIconContainer}
                     style={{ background: item.gradient }}
                   >
@@ -381,9 +381,9 @@ export default function AdminPanelNew() {
               <p className={styles.sectionSubtitle}>Acesso rápido às funções mais usadas</p>
             </div>
           </div>
-          
+
           <div className={styles.quickActionsGrid}>
-            <button 
+            <button
               className={styles.quickActionCard}
               onClick={() => navigate('/admin987654321/stories')}
             >
@@ -392,8 +392,8 @@ export default function AdminPanelNew() {
               </div>
               <span className={styles.quickActionText}>Adicionar Story</span>
             </button>
-            
-            <button 
+
+            <button
               className={styles.quickActionCard}
               onClick={() => navigate('/admin987654321/comments')}
             >
@@ -402,8 +402,8 @@ export default function AdminPanelNew() {
               </div>
               <span className={styles.quickActionText}>Novo Comentário</span>
             </button>
-            
-            <button 
+
+            <button
               className={styles.quickActionCard}
               onClick={() => navigate('/admin987654321/analytics')}
             >
@@ -412,8 +412,8 @@ export default function AdminPanelNew() {
               </div>
               <span className={styles.quickActionText}>Ver Analytics</span>
             </button>
-            
-            <button 
+
+            <button
               className={styles.quickActionCard}
               onClick={() => navigate('/admin987654321/chat')}
             >

@@ -11,14 +11,33 @@ import StoriesManager from './pages/StoriesManager';
 import ProfileManager from './pages/ProfileManager';
 import CommentsManager from './pages/CommentsManager';
 import AdminStoryAnalytics from './pages/AdminStoryAnalytics';
+import SettingsManager from './pages/SettingsManager';
 import NotFoundScreen from './pages/NotFoundScreen';
 import AdminLogin from './pages/AdminLogin';
 import RequireAdminAuth from './components/RequireAdminAuth';
 import styles from './App.module.css';
 
+import { useEffect } from 'react';
+import { SettingsService } from './services/settingsService';
+
 const queryClient = new QueryClient();
 
 function App() {
+  useEffect(() => {
+    const initFacebookPixel = async () => {
+      const pixelId = await SettingsService.getFacebookPixelId();
+      if (pixelId && window.fbq) {
+        window.fbq('init', pixelId);
+        window.fbq('track', 'PageView');
+        console.log('Facebook Pixel initialized with ID:', pixelId);
+      } else {
+        console.warn('Facebook Pixel ID not found or fbq not loaded');
+      }
+    };
+
+    initFacebookPixel();
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
@@ -69,6 +88,14 @@ function App() {
             element={
               <RequireAdminAuth>
                 <div className="admin-fullscreen"><CommentsManager /></div>
+              </RequireAdminAuth>
+            }
+          />
+          <Route
+            path="/admin987654321/settings"
+            element={
+              <RequireAdminAuth>
+                <div className="admin-fullscreen"><SettingsManager /></div>
               </RequireAdminAuth>
             }
           />
