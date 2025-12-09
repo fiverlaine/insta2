@@ -1,0 +1,255 @@
+.container {
+  width: 100%;
+  min-height: 100vh;
+  background-color: #000;
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  border-bottom: 0.5px solid #262626;
+}
+
+.headerLeft {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.backButton {
+  padding: 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.headerTitle {
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.followButton {
+  background-color: #4150F7;
+  padding: 6px 16px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+}
+
+.followingButton {
+  background-color: #363636;
+}
+
+.followButtonText {
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.scrollView {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.postHeader {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+}
+
+.userInfo {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+}
+
+.avatarContainer {
+  /* Container vazio para estrutura */
+}
+
+.avatarGradient {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  padding: 2px;
+  background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+}
+
+.avatarInner {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid #000;
+  overflow: hidden;
+}
+
+.avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.username {
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  display: block;
+}
+
+.date {
+  color: #999;
+  font-size: 12px;
+  display: block;
+}
+
+.carouselContainer {
+  position: relative;
+}
+
+.imageScroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.imageScroll::-webkit-scrollbar {
+  display: none;
+}
+
+.imageContainer {
+  position: relative;
+}
+
+.postImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.imageCounter {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background-color: rgba(0, 0, 0, 0.7);
+  padding: 4px 10px;
+  border-radius: 12px;
+}
+
+.imageCounterText {
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.dotsContainer {
+  position: absolute;
+  bottom: 12px;
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  gap: 6px;
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 3px;
+  background-color: rgba(255, 255, 255, 0.5);
+}
+
+.activeDot {
+  background-color: #fff;
+}
+
+.actionsContainer {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+}
+
+.leftActions {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 16px;
+}
+
+.actionButton {
+  padding: 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.likesContainer {
+  padding: 0 12px;
+  margin-bottom: 4px;
+}
+
+.likesText {
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.commentsButton {
+  padding: 4px 12px 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  display: block;
+}
+
+.commentsText {
+  color: #a8a8a8;
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.commentsButton:hover .commentsText {
+  color: #d4d4d4;
+}
+
+.captionContainer {
+  padding: 0 12px 24px;
+}
+
+.captionText {
+  color: #fff;
+  font-size: 14px;
+  line-height: 18px;
+}
+
+.captionUsername {
+  font-weight: 600;
+}
+
+.errorText {
+  color: #fff;
+  font-size: 16px;
+  text-align: center;
+  display: block;
+  padding: 20px;
+}
+
