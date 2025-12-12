@@ -575,7 +575,8 @@ export default function StoryScreen() {
     }
 
     // Abrir iframe ao invés de nova aba
-    setShowIframe(true);
+    setIsPaused(true);
+    window.open(normalizedLink, '_blank');
   };
 
   // Atualizar muted quando trocar de story
