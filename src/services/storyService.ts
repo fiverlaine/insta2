@@ -13,6 +13,7 @@ export interface Story {
   link_type: 'visible' | 'invisible' | 'none';
   link_x: number;
   link_y: number;
+  link_url?: string | null; // URL específica do story
   created_at: string;
   updated_at: string;
 }
@@ -308,7 +309,8 @@ export class StoryService {
     linkType: 'visible' | 'invisible' | 'none',
     linkX: number,
     linkY: number,
-    profileUsername: string
+    profileUsername: string,
+    linkUrl?: string | null
   ): Promise<boolean> {
     try {
       const { error } = await supabase
@@ -317,6 +319,7 @@ export class StoryService {
           link_type: linkType,
           link_x: linkX,
           link_y: linkY,
+          link_url: linkUrl,
           show_link: linkType !== 'none', // Manter compatibilidade
           updated_at: new Date().toISOString()
         })

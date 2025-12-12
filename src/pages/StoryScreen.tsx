@@ -525,7 +525,10 @@ export default function StoryScreen() {
   const handleLinkClick = async (e: React.MouseEvent | React.TouchEvent) => {
     e.stopPropagation(); // Evita pausar o story
 
-    if (!profile?.link || !currentStory) return;
+    if (!currentStory) return;
+
+    const targetLink = currentStory.link_url || profile?.link;
+    if (!targetLink) return;
 
     let normalizedLink = normalizeUrl(profile.link);
 

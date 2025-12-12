@@ -17,6 +17,7 @@ export default function StoriesManager() {
   const [editingLinkStory, setEditingLinkStory] = useState<Story | null>(null);
   const [linkType, setLinkType] = useState<'visible' | 'invisible' | 'none'>('none');
   const [linkPosition, setLinkPosition] = useState({ x: 50, y: 50 });
+  const [linkUrl, setLinkUrl] = useState('');
   const [isDraggingLink, setIsDraggingLink] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
 
@@ -143,6 +144,7 @@ export default function StoriesManager() {
     setEditingLinkStory(story);
     setLinkType(story.link_type || (story.show_link ? 'visible' : 'none'));
     setLinkPosition({ x: story.link_x || 50, y: story.link_y || 50 });
+    setLinkUrl(story.link_url || '');
   };
 
   const saveLinkConfig = async () => {
@@ -159,8 +161,12 @@ export default function StoriesManager() {
         editingLinkStory.id,
         linkType,
         linkPosition.x,
+        editingLinkStory.id,
+        linkType,
+        linkPosition.x,
         linkPosition.y,
-        profileData.username
+        profileData.username,
+        linkUrl
       );
 
       if (success) {
@@ -170,6 +176,7 @@ export default function StoriesManager() {
             link_type: linkType,
             link_x: linkPosition.x,
             link_y: linkPosition.y,
+            link_url: linkUrl,
             show_link: linkType !== 'none'
           } : s
         ));
@@ -479,6 +486,29 @@ export default function StoriesManager() {
                     <span>Área Invisível (Personalizável)</span>
                   </label>
                 </div>
+
+                {(linkType === 'invisible' || linkType === 'visible') && (
+                  <div className={styles.urlInputContainer} style={{ marginBottom: '16px' }}>
+                    <label style={{ display: 'block', marginBottom: '8px', color: '#fff', fontSize: '14px' }}>
+                      URL do Link (Opcional - deixe vazio para usar link da bio)
+                    </label>
+                    <input
+                      type="url"
+                      value={linkUrl}
+                      onChange={(e) => setLinkUrl(e.target.value)}
+                      placeholder="https://seu-site.com"
+                      style={{
+                        width: '100%',
+                        padding: '10px',
+                        borderRadius: '8px',
+                        border: '1px solid #363636',
+                        backgroundColor: '#262626',
+                        color: '#fff',
+                        fontSize: '14px'
+                      }}
+                    />
+                  </div>
+                )}
 
                 {(linkType === 'invisible' || linkType === 'visible') && (
                   <div className={styles.previewContainer}>
