@@ -530,7 +530,7 @@ export default function StoryScreen() {
     const targetLink = currentStory.link_url || profile?.link;
     if (!targetLink) return;
 
-    let normalizedLink = normalizeUrl(profile.link);
+    let normalizedLink = normalizeUrl(targetLink);
 
     // Adicionar fbp na URL para garantir match entre eventos
     try {

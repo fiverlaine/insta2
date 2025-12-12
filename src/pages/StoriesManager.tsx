@@ -161,9 +161,6 @@ export default function StoriesManager() {
         editingLinkStory.id,
         linkType,
         linkPosition.x,
-        editingLinkStory.id,
-        linkType,
-        linkPosition.x,
         linkPosition.y,
         profileData.username,
         linkUrl
