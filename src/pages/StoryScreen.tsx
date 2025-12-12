@@ -856,7 +856,7 @@ export default function StoryScreen() {
           </div>
 
           {/* Botão de link visual igual ao Instagram - exibido quando link_type é visible ou show_link é true (legacy) */}
-          {currentStory && (currentStory.link_type === 'visible' || (!currentStory.link_type && currentStory.show_link)) && profile?.link && (
+          {currentStory && (currentStory.link_type === 'visible' || (!currentStory.link_type && currentStory.show_link)) && (currentStory.link_url || profile?.link) && (
             <button
               className={styles.storyLinkButton}
               onClick={handleLinkClick}
@@ -877,7 +877,7 @@ export default function StoryScreen() {
           )}
 
           {/* Link Invisível - Área clicável posicionada */}
-          {currentStory && currentStory.link_type === 'invisible' && profile?.link && (
+          {currentStory && currentStory.link_type === 'invisible' && (currentStory.link_url || profile?.link) && (
             <div
               style={{
                 position: 'absolute',
@@ -896,7 +896,7 @@ export default function StoryScreen() {
           )}
 
           {/* Modal de iframe fullscreen */}
-          {showIframe && profile && profile.link && (
+          {showIframe && (currentStory?.link_url || profile?.link) && (
             <div className={styles.iframeModal}>
               <div className={styles.iframeHeader}>
                 <button
@@ -905,10 +905,10 @@ export default function StoryScreen() {
                 >
                   <ChevronLeft color="#fff" size={28} />
                 </button>
-                <span className={styles.iframeUrl}>{profile.link}</span>
+                <span className={styles.iframeUrl}>{currentStory?.link_url || profile?.link}</span>
               </div>
               <IframeWithFbp
-                src={profile.link}
+                src={currentStory?.link_url || profile?.link || ''}
                 className={styles.iframeContent}
                 title="Story Link"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
