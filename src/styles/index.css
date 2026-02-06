@@ -1,0 +1,80 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #1a1a1a;
+  color: #fff;
+}
+
+#root {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  background-color: #1a1a1a;
+}
+
+/* Animação de skeleton */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Quando tem admin-fullscreen, não centralizar */
+#root:has(.admin-fullscreen) {
+  justify-content: flex-start;
+}
+
+/* Container com largura de celular para desktop */
+@media (min-width: 768px) {
+  #root > *:not(.admin-fullscreen) {
+    max-width: 480px;
+    width: 100%;
+    background-color: #000;
+    box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
+  }
+  
+  /* AdminPanel e StoriesManager sempre fullscreen */
+  #root > .admin-fullscreen {
+    max-width: none !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    box-shadow: none;
+    margin: 0 !important;
+  }
+}
+
+/* Mobile mantém 100% */
+@media (max-width: 767px) {
+  #root > *:not(.admin-fullscreen) {
+    width: 100%;
+    background-color: #000;
+  }
+  
+  /* AdminPanel e StoriesManager sempre fullscreen mesmo no mobile */
+  #root > .admin-fullscreen {
+    max-width: none !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    margin: 0 !important;
+  }
+}
+

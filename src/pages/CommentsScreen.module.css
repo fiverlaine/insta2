@@ -1,0 +1,268 @@
+.container {
+  width: 100%;
+  min-height: 100vh;
+  background-color: #000;
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 16px;
+  border-bottom: 0.5px solid #262626;
+}
+
+.backButton {
+  padding: 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.title {
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.scrollView {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: 60px;
+}
+
+.commentsList {
+  display: flex;
+  flex-direction: column;
+}
+
+.commentItem {
+  padding: 12px 16px;
+  border-bottom: 0.5px solid #262626;
+}
+
+.replyItem {
+  padding: 12px 0;
+  padding-left: 40px;
+}
+
+.commentContent {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.avatarContainer {
+  flex-shrink: 0;
+}
+
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.commentTextSection {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.commentHeader {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.username {
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.verifiedBadge {
+  flex-shrink: 0;
+}
+
+.commentTime {
+  color: #a8a8a8;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.commentText {
+  color: #fff;
+  font-size: 14px;
+  line-height: 18px;
+  margin: 0;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+}
+
+.hashtag {
+  color: #4150F7;
+  font-weight: 400;
+}
+
+.commentActions {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.likesCount {
+  color: #a8a8a8;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.replyButton {
+  color: #a8a8a8;
+  font-size: 12px;
+  font-weight: 600;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.replyButton:hover {
+  color: #d4d4d4;
+}
+
+.viewRepliesButton,
+.hideRepliesButton {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.replyLine {
+  width: 24px;
+  height: 0.5px;
+  background-color: #a8a8a8;
+}
+
+.viewRepliesText,
+.hideRepliesText {
+  color: #a8a8a8;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.viewRepliesButton:hover .viewRepliesText,
+.hideRepliesButton:hover .hideRepliesText {
+  color: #d4d4d4;
+}
+
+.repliesContainer {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.likeButton {
+  padding: 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.inputContainer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 8px 16px;
+  background-color: #000;
+  border-top: 0.5px solid #262626;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+}
+
+.inputAvatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.input {
+  flex: 1;
+  background: none;
+  border: none;
+  outline: none;
+  color: #fff;
+  font-size: 14px;
+  padding: 8px 0;
+}
+
+.input::placeholder {
+  color: #6e6e6e;
+}
+
+.input:disabled {
+  cursor: not-allowed;
+}
+
+/* Empty State */
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 40px;
+  gap: 12px;
+}
+
+.emptyIconWrapper {
+  margin-bottom: 16px;
+}
+
+.emptyIcon {
+  color: #6e6e6e;
+}
+
+.emptyTitle {
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.emptyText {
+  color: #a8a8a8;
+  font-size: 14px;
+  margin: 0;
+  text-align: center;
+}
+

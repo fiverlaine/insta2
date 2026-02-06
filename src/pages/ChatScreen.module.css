@@ -1,0 +1,527 @@
+.container {
+  width: 100%;
+  min-height: 100vh;
+  background-color: #000;
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background-color: #000;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 0.5px solid #262626;
+}
+
+.backButton {
+  padding: 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.2s;
+}
+
+.backButton:hover {
+  opacity: 0.7;
+}
+
+.headerCenter {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin: 0 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: opacity 0.2s;
+}
+
+.headerCenter:hover {
+  opacity: 0.8;
+}
+
+.headerAvatarContainer {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  margin-right: 10px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.headerAvatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  position: relative;
+  z-index: 2;
+}
+
+.gradientRing {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+  pointer-events: none;
+  z-index: 1;
+  mask: radial-gradient(circle at center, transparent 16px, black 16px);
+  -webkit-mask: radial-gradient(circle at center, transparent 16px, black 16px);
+}
+
+.headerTextContainer {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.headerName {
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 18px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.headerUsername {
+  color: #a8a8a8;
+  font-size: 13px;
+  line-height: 16px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.headerActions {
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
+  flex-shrink: 0;
+  margin-left: 10%;
+}
+
+.headerButton {
+  padding: 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.2s;
+}
+
+.headerButton:hover {
+  opacity: 0.7;
+}
+
+.messagesContainer {
+  flex: 1;
+  overflow-y: auto;
+  padding-top: 24px;
+}
+
+.profileIntro {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 24px;
+}
+
+.profileAvatarContainer {
+  margin-bottom: 12px;
+}
+
+.profileAvatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.profileName {
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.profileUsername {
+  color: #a8a8a8;
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.profileFollowers {
+  color: #a8a8a8;
+  font-size: 13px;
+  text-align: center;
+  margin-bottom: 4px;
+}
+
+.profileFollowInfo {
+  color: #a8a8a8;
+  font-size: 13px;
+  text-align: center;
+  margin-bottom: 2px;
+}
+
+.profileAccountType {
+  color: #a8a8a8;
+  font-size: 13px;
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.viewProfileButton {
+  background-color: #363636;
+  padding: 8px 24px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+}
+
+.viewProfileText {
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.loadingContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+}
+
+.loadingText {
+  color: #a8a8a8;
+  font-size: 14px;
+}
+
+.messagesWrapper {
+  padding: 16px;
+  padding-top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.messageItem {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  max-width: 70%;
+}
+
+.messageFromVisitor {
+  align-self: flex-end;
+}
+
+.messageFromAdmin {
+  align-self: flex-start;
+}
+
+.messageAvatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.messageContent {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 100%;
+}
+
+/* Quando há resposta ao story, reduzir gap para conectar visualmente */
+.messageFromVisitor .messageContent:has(.storyReplyContainer) {
+  gap: 0;
+}
+
+.messageBubble {
+  padding: 8px 12px;
+  border-radius: 18px;
+  display: inline-block;
+  max-width: fit-content;
+}
+
+.messageFromVisitor .messageBubble {
+  background-color: #5B51D8;
+  border-bottom-right-radius: 4px;
+}
+
+.messageFromAdmin .messageBubble {
+  background-color: #262626;
+  border-bottom-left-radius: 4px;
+}
+
+.messageText {
+  color: #fff;
+  font-size: 14px;
+  line-height: 18px;
+  word-wrap: break-word;
+  white-space: pre-wrap; /* Para renderizar quebras de linha */
+}
+
+.messageTime {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 11px;
+  margin-top: 2px;
+  padding-left: 4px;
+}
+
+.inputContainer {
+  position: sticky;
+  bottom: 0;
+  z-index: 100;
+  padding: 8px 16px;
+  background-color: #000;
+  border-top: 0.5px solid #262626;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cameraButton {
+  width: 36px;
+  height: 36px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: opacity 0.2s;
+}
+
+.cameraButton:hover:not(:disabled) {
+  opacity: 0.85;
+}
+
+.cameraButton:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.input {
+  flex: 1;
+  background-color: #262626;
+  border-radius: 20px;
+  padding: 10px 16px;
+  color: #fff;
+  font-size: 16px;
+  border: none;
+  outline: none;
+  min-width: 0;
+}
+
+.input::placeholder {
+  color: #737373;
+}
+
+.input:disabled {
+  opacity: 0.5;
+}
+
+.rightIcons {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.iconButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.2s;
+}
+
+.iconButton:hover:not(:disabled) {
+  opacity: 0.7;
+}
+
+.iconButton:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.sendButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.2s;
+}
+
+.sendButton:hover:not(:disabled) {
+  opacity: 0.7;
+}
+
+.sendButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Estilos de mídia nas mensagens */
+.mediaContainer {
+  width: 100%;
+  max-width: 200px;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.mediaImage {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.mediaImage:hover {
+  opacity: 0.9;
+}
+
+.mediaVideo {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 12px;
+}
+
+.mediaAudio {
+  width: 100%;
+  height: 40px;
+}
+
+/* Resposta ao Story */
+.storyReplyContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+.messageFromAdmin .storyReplyContainer {
+  border-left: 2px solid #555;
+  padding-left: 12px;
+  align-items: flex-start;
+}
+
+.messageFromVisitor .storyReplyContainer {
+  border-right: 2px solid #555;
+  padding-right: 12px;
+  align-items: flex-end;
+  margin-bottom: 0;
+}
+
+/* Conectar mensagem abaixo da foto do story para visitante */
+.messageFromVisitor:has(.storyReplyContainer) .messageBubble {
+  margin-top: 4px;
+  margin-right: 12px;
+  align-self: flex-end;
+  position: relative;
+}
+
+.storyReplyText {
+  font-size: 13px;
+  color: #a8a8a8;
+}
+
+.storyReplyThumbnail {
+  width: 48px;
+  height: 64px;
+  border-radius: 8px;
+  object-fit: cover;
+  transition: opacity 0.2s, transform 0.2s;
+}
+
+.storyReplyThumbnail:hover {
+  opacity: 0.85;
+  transform: scale(1.05);
+}
+
+
+/* Modal de visualização de imagem */
+.imageModal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 20px;
+  cursor: zoom-out;
+}
+
+.imageModalContent {
+  position: relative;
+  max-width: 90vw;
+  max-height: 90vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.imageModalClose {
+  position: absolute;
+  top: -40px;
+  right: 0;
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 32px;
+  cursor: pointer;
+  padding: 8px;
+  line-height: 1;
+  z-index: 10000;
+  transition: opacity 0.2s;
+}
+
+.imageModalClose:hover {
+  opacity: 0.7;
+}
+
+.imageModalImage {
+  max-width: 100%;
+  max-height: 90vh;
+  object-fit: contain;
+  border-radius: 8px;
+  cursor: default;
+}
+

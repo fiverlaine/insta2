@@ -1,0 +1,41 @@
+.appContainer {
+  width: 100%;
+  min-height: 100vh;
+  background-color: #000;
+  position: relative;
+}
+
+/* Desktop: largura de celular centralizada */
+@media (min-width: 768px) {
+  .appContainer {
+    max-width: 480px;
+    margin: 0 auto;
+    box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
+  }
+}
+
+/* Mobile: tela cheia */
+@media (max-width: 767px) {
+  .appContainer {
+    width: 100%;
+  }
+}
+
+/* Overlay para o Story Modal */
+.storyOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1000;
+  background: transparent;
+}
+
+@media (min-width: 768px) {
+  .storyOverlay {
+    left: 50%;
+    transform: translateX(-50%);
+    max-width: 480px;
+  }
+}
