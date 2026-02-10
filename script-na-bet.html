@@ -129,33 +129,78 @@
 
             // Interceptadores de Rede (Somente se ativo)
             function setupNetworkInterceptors() {
+                // Interceptor segura para fetch
                 const originalFetch = window.fetch;
-                window.fetch = async function (...args) {
-                    const response = await originalFetch.apply(this, args);
-                    try {
-                        const url = args[0].toString();
-                        const clone = response.clone();
-                        clone.json().then(data => {
-                            if (url.includes('gerar_pix') && data.success) sendEvent('pix_generated', { amount: data.valor || 0, txid: data.qrcode, raw: data });
-                            if (url.includes('verifica_pagamento') && data.hasUpdate) sendEvent('pix_paid', { status: 'paid', raw: data });
-                        }).catch(() => { });
-                    } catch (e) { }
-                    return response;
+                window.fetch = function (...args) {
+                    // Executa o fetch original e armazena a promise
+                    const fetchPromise = originalFetch.apply(this, args);
+
+                    // Processamento paralelo (não bloqueante)
+                    fetchPromise.then(response => {
+                        try {
+                            // Clona a resposta para não consumir o body da original
+                            const clone = response.clone();
+                            const url = args[0] ? args[0].toString() : '';
+
+                            clone.json().then(data => {
+                                // Lógica de detecção de PIX
+                                if (url.includes('gerar_pix') && data.success) {
+                                    sendEvent('pix_generated', {
+                                        amount: data.valor || 0,
+                                        txid: data.qrcode,
+                                        raw: data
+                                    });
+                                }
+                                // Lógica de detecção de pagamento
+                                if (url.includes('verifica_pagamento') && data.hasUpdate) {
+                                    sendEvent('pix_paid', {
+                                        status: 'paid',
+                                        raw: data
+                                    });
+                                }
+                            }).catch(() => {
+                                // Ignora erros de parse JSON (ex: resposta HTML)
+                            });
+                        } catch (err) {
+                            // Ignora erros de clonagem ou processamento
+                        }
+                    }).catch(() => {
+                        // Ignora erros na requisição original (network error)
+                    });
+
+                    // Retorna a promise original intacta imediatamente
+                    return fetchPromise;
                 };
 
+                // Interceptor seguro para XMLHttpRequest
                 const originalOpen = XMLHttpRequest.prototype.open;
-                XMLHttpRequest.prototype.open = function (method, url) { this._url = url; return originalOpen.apply(this, arguments); };
+                XMLHttpRequest.prototype.open = function (method, url) {
+                    this._url = url;
+                    return originalOpen.apply(this, arguments);
+                };
+
                 const originalSend = XMLHttpRequest.prototype.send;
                 XMLHttpRequest.prototype.send = function () {
                     this.addEventListener('load', function () {
                         try {
                             if (this._url && (this._url.includes('gerar_pix') || this._url.includes('verifica_pagamento'))) {
-                                const data = JSON.parse(this.responseText);
-                                if (this._url.includes('gerar_pix') && data.success) {
-                                    let amt = data.valor || parseFloat(document.querySelector('#valuedeposit')?.value || 0);
-                                    sendEvent('pix_generated', { amount: amt, txid: data.qrcode, raw: data });
+                                try {
+                                    const data = JSON.parse(this.responseText);
+                                    if (this._url.includes('gerar_pix') && data.success) {
+                                        let amt = data.valor || 0;
+                                        // Tenta pegar valor do input se não vier no JSON
+                                        if (!amt) {
+                                            const inputVal = document.querySelector('#valuedeposit');
+                                            if (inputVal) amt = parseFloat(inputVal.value);
+                                        }
+                                        sendEvent('pix_generated', { amount: amt, txid: data.qrcode, raw: data });
+                                    }
+                                    if (this._url.includes('verifica_pagamento') && data.hasUpdate) {
+                                        sendEvent('pix_paid', { status: 'paid', raw: data });
+                                    }
+                                } catch (e) {
+                                    // Erro no parse ou lógica
                                 }
-                                if (this._url.includes('verifica_pagamento') && data.hasUpdate) sendEvent('pix_paid', { status: 'paid', raw: data });
                             }
                         } catch (e) { }
                     });
