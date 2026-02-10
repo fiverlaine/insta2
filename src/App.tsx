@@ -108,7 +108,7 @@ function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter basename="/instagram">
+      <BrowserRouter>
         <AppRoutes />
       </BrowserRouter>
     </QueryClientProvider>
