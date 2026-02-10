@@ -17,9 +17,6 @@ import AdminLogin from './pages/AdminLogin';
 import RequireAdminAuth from './components/RequireAdminAuth';
 import styles from './App.module.css';
 
-import { useEffect } from 'react';
-import { SettingsService } from './services/settingsService';
-
 const queryClient = new QueryClient();
 
 import { useLocation } from 'react-router-dom';
@@ -107,24 +104,11 @@ function AppRoutes() {
 }
 
 function App() {
-  useEffect(() => {
-    const initFacebookPixel = async () => {
-      const pixelId = await SettingsService.getFacebookPixelId();
-      if (pixelId && window.fbq) {
-        window.fbq('init', pixelId);
-        window.fbq('track', 'PageView');
-        console.log('Facebook Pixel initialized with ID:', pixelId);
-      } else {
-        console.warn('Facebook Pixel ID not found or fbq not loaded');
-      }
-    };
 
-    initFacebookPixel();
-  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
+      <BrowserRouter basename="/instagram">
         <AppRoutes />
       </BrowserRouter>
     </QueryClientProvider>

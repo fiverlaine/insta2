@@ -6,17 +6,26 @@ import { useFollow } from "@/hooks/useFollow";
 import { StoryService } from "@/services/storyService";
 import styles from "./ProfileScreen.module.css";
 
-// Função helper para normalizar URLs (evita duplicação de https://)
+// Função helper para normalizar URLs
 const normalizeUrl = (url: string | null | undefined): string => {
   if (!url) return '';
-  // Remove espaços e quebras de linha
   url = url.trim();
-  // Se já começa com http:// ou https://, retorna como está
   if (url.startsWith('http://') || url.startsWith('https://')) {
     return url;
   }
-  // Caso contrário, adiciona https://
   return `https://${url}`;
+};
+
+// Função para formatar o link visualmente (até o domínio)
+const formatDisplayLink = (url: string | null | undefined): string => {
+  if (!url) return '';
+  try {
+    const normalized = normalizeUrl(url);
+    const urlObj = new URL(normalized);
+    return `${urlObj.protocol}//${urlObj.hostname}`;
+  } catch (e) {
+    return url;
+  }
 };
 
 // Componente para iframe com fbp na URL
@@ -230,13 +239,19 @@ export default function ProfileScreen() {
                   </span>
                 ))}
                 {profile?.link && (
-                  <button
+                  <a
+                    href={normalizeUrl(profile.link)}
                     className={styles.linkContainer}
-                    onClick={() => setShowIframe(true)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => {
+                      // Se quiser manter o rastreio de FBP, podemos interceptar aqui ou deixar o link direto
+                      // O usuário pediu especificamente "nova aba"
+                    }}
                   >
                     <Link2 color="#74A1FF" size={13} className={styles.linkIcon} />
-                    <span className={styles.bioLink}>{profile.link}</span>
-                  </button>
+                    <span className={styles.bioLink}>{formatDisplayLink(profile.link)}</span>
+                  </a>
                 )}
               </>
             )}

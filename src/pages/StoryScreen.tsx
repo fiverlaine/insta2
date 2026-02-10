@@ -6,15 +6,7 @@ import { useStoryLike } from "@/hooks/useStoryLike";
 import { ChatService } from "@/services/chatService";
 import { StoryService, type Story } from "@/services/storyService";
 import { MediaService } from "@/services/mediaService";
-import {
-  StoryViewTrackingService,
-  STORY_COMPLETION_THRESHOLD,
-  type StoryPlaybackEvent,
-  type StoryViewSessionContext,
-  type StoryViewExitReason,
-} from "@/services/storyViewTrackingService";
 import { ProfileService, type ProfileSettings } from "@/services/profileService";
-import { trackLeadFromStory } from "@/utils/facebookPixel";
 import { supabase } from "@/lib/supabase";
 import styles from "./StoryScreen.module.css";
 
@@ -31,43 +23,40 @@ const normalizeUrl = (url: string | null | undefined): string => {
   return `https://${url}`;
 };
 
-// Componente para iframe com fbp na URL
-const IframeWithFbp = ({ src, ...props }: { src: string | null;[key: string]: any }) => {
-  const [iframeSrc, setIframeSrc] = useState<string>('');
+// Helper para persistir UTMs e parâmetros de rastreamento
+const appendTrackingParams = (targetUrl: string) => {
+  try {
+    const urlObj = new URL(targetUrl);
+    const currentParams = new URLSearchParams(window.location.search);
+    
+    // Lista de parâmetros para repassar
+    const paramsToForward = [
+      'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term',
+      'fbclid', 'ttclid', 'gclid', 'src', 'sck', 'funnel_id', 'utmify'
+    ];
 
-  useEffect(() => {
-    const addFbpToUrl = async () => {
-      let url = normalizeUrl(src);
-
-      // Adicionar fbp na URL para garantir match entre eventos
-      try {
-        const { getFbpCookie } = await import('@/utils/facebookPixel');
-        const fbp = getFbpCookie();
-        if (fbp) {
-          const urlObj = new URL(url);
-          // Não sobrescrever se já existir
-          if (!urlObj.searchParams.has('fbp')) {
-            urlObj.searchParams.set('fbp', fbp);
-            url = urlObj.toString();
-          }
-        }
-      } catch (fbpError) {
-        console.warn('Erro ao adicionar fbp na URL do iframe:', fbpError);
+    paramsToForward.forEach(param => {
+      const value = currentParams.get(param);
+      if (value) {
+        // Só adiciona se não existir na URL de destino (ou sobrescreve se preferir, aqui optamos por preservar destino se já tiver, mas geralmente o tráfego novo manda)
+        // Para garantir que o rastreamento mais recente prevaleça, vamos sobrescrever ou adicionar
+        urlObj.searchParams.set(param, value);
       }
+    });
 
-      setIframeSrc(url);
-    };
-
-    if (src) {
-      addFbpToUrl();
-    }
-  }, [src]);
-
-  if (!iframeSrc) {
-    return null;
+    return urlObj.toString();
+  } catch (error) {
+    console.error('Erro ao adicionar params de tracking:', error);
+    return targetUrl;
   }
+};
 
-  return <iframe src={iframeSrc} {...props} />;
+// Componente para iframe com fbp na URL
+// Componente para iframe simplificado (sem injeção de FBP)
+const IframeWithFbp = ({ src, ...props }: { src: string | null;[key: string]: any }) => {
+  if (!src) return null;
+  const url = normalizeUrl(src);
+  return <iframe src={url} {...props} />;
 };
 
 export default function StoryScreen() {
@@ -97,21 +86,7 @@ export default function StoryScreen() {
   // Hook de like - sempre chamado, mas só funciona quando há story válido
   const { isLiked, toggleLike: toggleLikeFromHook } = useStoryLike(currentStory?.id || '');
 
-  const activeSessionRef = useRef<{
-    storyId: string;
-    context: StoryViewSessionContext;
-    startedAtIso: string;
-    accumulatedMs: number;
-    lastFrameTs: number | null;
-    lastProgressValue: number;
-    lastProgressEventValue: number;
-    lastProgressEventTimestamp: number;
-    playbackEvents: StoryPlaybackEvent[];
-    completedReported: boolean;
-  } | null>(null);
-  const previousStoryRef = useRef<Story | null>(null);
-  const isPausedRef = useRef<boolean>(false);
-  const previousPausedRef = useRef<boolean>(isPaused);
+
 
   const performanceNow = useCallback(() => {
     if (typeof performance !== 'undefined' && typeof performance.now === 'function') {
@@ -187,179 +162,11 @@ export default function StoryScreen() {
     }
   };
 
-  const recordPlaybackEvent = useCallback((event: Omit<StoryPlaybackEvent, 'timestamp'> & { timestamp?: string }) => {
-    const active = activeSessionRef.current;
-    if (!active) return;
-    const timestamp = event.timestamp ?? new Date().toISOString();
-    active.playbackEvents.push({
-      type: event.type,
-      timestamp,
-      progress: event.progress !== undefined ? Number(event.progress.toFixed(4)) : undefined,
-      payload: event.payload,
-    });
-  }, []);
 
-  const syncActiveSessionWatchTime = useCallback(() => {
-    const active = activeSessionRef.current;
-    if (!active) return;
-    const now = performanceNow();
-    if (active.lastFrameTs === null) {
-      active.lastFrameTs = now;
-      return;
-    }
-    if (!isPausedRef.current && !(typeof document !== 'undefined' && document.hidden)) {
-      active.accumulatedMs += now - active.lastFrameTs;
-    }
-    active.lastFrameTs = now;
-  }, [performanceNow]);
 
-  const finalizeStorySession = useCallback(async (story: Story | null, exitReason: StoryViewExitReason) => {
-    if (!story) return;
-    const active = activeSessionRef.current;
-    if (!active || active.storyId !== story.id) {
-      return;
-    }
+  /* Tracking effects removed */
 
-    syncActiveSessionWatchTime();
-
-    const progress = active.lastProgressValue;
-    const completed = progress >= STORY_COMPLETION_THRESHOLD;
-    const endedAt = new Date().toISOString();
-
-    recordPlaybackEvent({
-      type: 'exit',
-      progress,
-      payload: { reason: exitReason },
-      timestamp: endedAt,
-    });
-
-    await StoryViewTrackingService.commitViewSession(active.context, {
-      watchTimeMs: active.accumulatedMs,
-      viewedPercentage: progress,
-      completed,
-      exitReason,
-      startedAt: active.startedAtIso,
-      endedAt,
-      playbackEvents: active.playbackEvents,
-      mediaType: story.media_type,
-      durationMs: story.duration,
-    });
-
-    activeSessionRef.current = null;
-  }, [recordPlaybackEvent, syncActiveSessionWatchTime]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const processSession = async () => {
-      const previousStory = previousStoryRef.current;
-      if (previousStory && previousStory.id !== currentStory?.id) {
-        await finalizeStorySession(previousStory, 'story_switch');
-      }
-
-      if (!currentStory || cancelled) {
-        previousStoryRef.current = currentStory ?? null;
-        activeSessionRef.current = null;
-        return;
-      }
-
-      const sessionContext = await StoryViewTrackingService.beginViewSession(currentStory.id);
-      if (!sessionContext || cancelled) return;
-
-      const nowIso = new Date().toISOString();
-      const nowPerf = performanceNow();
-      activeSessionRef.current = {
-        storyId: currentStory.id,
-        context: sessionContext,
-        startedAtIso: nowIso,
-        accumulatedMs: 0,
-        lastFrameTs: nowPerf,
-        lastProgressValue: 0,
-        lastProgressEventValue: 0,
-        lastProgressEventTimestamp: nowPerf,
-        playbackEvents: [
-          {
-            type: 'enter',
-            timestamp: nowIso,
-            payload: { order_index: currentStory.order_index },
-          },
-          {
-            type: 'play',
-            timestamp: nowIso,
-            payload: { auto: true },
-          },
-        ],
-        completedReported: false,
-      };
-
-      previousStoryRef.current = currentStory;
-    };
-
-    void processSession();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [currentStory, finalizeStorySession, performanceNow]);
-
-  useEffect(() => {
-    const previous = previousPausedRef.current;
-    previousPausedRef.current = isPaused;
-    isPausedRef.current = isPaused;
-
-    const active = activeSessionRef.current;
-    if (!active || previous === isPaused) {
-      return;
-    }
-
-    if (isPaused) {
-      syncActiveSessionWatchTime();
-      recordPlaybackEvent({
-        type: 'pause',
-        payload: { source: 'press' },
-      });
-    } else {
-      active.lastFrameTs = performanceNow();
-      recordPlaybackEvent({
-        type: 'resume',
-        payload: { source: 'press' },
-      });
-    }
-  }, [isPaused, performanceNow, recordPlaybackEvent, syncActiveSessionWatchTime]);
-
-  useEffect(() => {
-    const handleVisibility = () => {
-      const active = activeSessionRef.current;
-      if (!active) return;
-      if (typeof document !== 'undefined' && document.hidden) {
-        recordPlaybackEvent({
-          type: 'pause',
-          payload: { source: 'visibilitychange' },
-        });
-        syncActiveSessionWatchTime();
-      } else {
-        active.lastFrameTs = performanceNow();
-        recordPlaybackEvent({
-          type: 'resume',
-          payload: { source: 'visibilitychange' },
-        });
-      }
-    };
-
-    if (typeof document !== 'undefined') {
-      document.addEventListener('visibilitychange', handleVisibility);
-      return () => {
-        document.removeEventListener('visibilitychange', handleVisibility);
-      };
-    }
-    return () => undefined;
-  }, [performanceNow, recordPlaybackEvent, syncActiveSessionWatchTime]);
-
-  const handleNext = useCallback((reason: StoryViewExitReason = 'auto_advance') => {
-    if (currentStory?.id) {
-      void finalizeStorySession(currentStory, reason);
-    }
-
+  const handleNext = useCallback((_reason?: string) => {
     if (currentIndex < storiesData.length - 1) {
       if (progressAnims.current[currentIndex] !== null) {
         progressAnims.current[currentIndex] = 1;
@@ -369,13 +176,9 @@ export default function StoryScreen() {
     } else {
       navigate(-1);
     }
-  }, [currentIndex, currentStory, finalizeStorySession, navigate, storiesData.length]);
+  }, [currentIndex, navigate, storiesData.length]);
 
   const handlePrevious = useCallback(() => {
-    if (currentStory?.id) {
-      void finalizeStorySession(currentStory, 'manual_previous');
-    }
-
     if (currentIndex > 0) {
       if (progressAnims.current[currentIndex] !== null) {
         progressAnims.current[currentIndex] = 0;
@@ -387,7 +190,7 @@ export default function StoryScreen() {
         updateProgressBar(currentIndex - 1, 0);
       }
     }
-  }, [currentIndex, currentStory, finalizeStorySession]);
+  }, [currentIndex]);
 
   const updateProgressBar = (index: number, progress: number) => {
     const bar = progressRefs.current[index];
@@ -437,31 +240,7 @@ export default function StoryScreen() {
       progressAnims.current[currentIndex] = progress;
       updateProgressBar(currentIndex, progress);
 
-      const active = activeSessionRef.current;
-      if (active && active.storyId === currentStory.id) {
-        if (active.lastFrameTs === null) {
-          active.lastFrameTs = now;
-        } else if (!isPausedRef.current && !(typeof document !== 'undefined' && document.hidden)) {
-          active.accumulatedMs += now - active.lastFrameTs;
-        }
-        active.lastFrameTs = now;
-        active.lastProgressValue = progress;
-
-        if (!active.completedReported) {
-          const deltaProgress = Math.abs(progress - active.lastProgressEventValue);
-          const timeSinceLastEvent = now - active.lastProgressEventTimestamp;
-          if (deltaProgress >= 0.05 || timeSinceLastEvent >= 1000) {
-            recordPlaybackEvent({ type: 'progress', progress });
-            active.lastProgressEventValue = progress;
-            active.lastProgressEventTimestamp = now;
-          }
-
-          if (progress >= STORY_COMPLETION_THRESHOLD) {
-            recordPlaybackEvent({ type: 'complete', progress });
-            active.completedReported = true;
-          }
-        }
-      }
+      /* Tracking block removed */
 
       if (progress >= 1) {
         handleNext('auto_advance');
@@ -478,7 +257,7 @@ export default function StoryScreen() {
         intervalRef.current = null;
       }
     };
-  }, [currentIndex, currentStory, handleNext, isPaused, performanceNow, recordPlaybackEvent]);
+  }, [currentIndex, currentStory, handleNext, isPaused, performanceNow]);
 
   const handleTapLeft = () => {
     handlePrevious();
@@ -503,10 +282,6 @@ export default function StoryScreen() {
   const handleToggleMute = () => {
     setIsMuted((prev) => {
       const nextMuted = !prev;
-      recordPlaybackEvent({
-        type: 'mute_toggle',
-        payload: { muted: nextMuted },
-      });
       if (videoRef.current) {
         videoRef.current.muted = nextMuted;
       }
@@ -514,13 +289,9 @@ export default function StoryScreen() {
     });
   };
 
-  const handleVideoPlay = () => {
-    recordPlaybackEvent({ type: 'play', payload: { source: 'video_element' } });
-  };
+  const handleVideoPlay = () => {};
 
-  const handleVideoPause = () => {
-    recordPlaybackEvent({ type: 'pause', payload: { source: 'video_element' } });
-  };
+  const handleVideoPause = () => {};
 
   const handleLinkClick = async (e: React.MouseEvent | React.TouchEvent) => {
     e.stopPropagation(); // Evita pausar o story
@@ -532,47 +303,8 @@ export default function StoryScreen() {
 
     let normalizedLink = normalizeUrl(targetLink);
 
-    // Adicionar fbp na URL para garantir match entre eventos
-    try {
-      const { getFbpCookie } = await import('@/utils/facebookPixel');
-      const fbp = getFbpCookie();
-      if (fbp) {
-        const url = new URL(normalizedLink);
-        // Não sobrescrever se já existir
-        if (!url.searchParams.has('fbp')) {
-          url.searchParams.set('fbp', fbp);
-          normalizedLink = url.toString();
-        }
-      }
-    } catch (fbpError) {
-      console.warn('Erro ao adicionar fbp na URL:', fbpError);
-    }
-
-    recordPlaybackEvent({
-      type: 'link',
-      payload: { url: normalizedLink, order_index: currentStory.order_index },
-    });
-    // Rastrear evento "Lead" no Facebook Pixel com Advanced Matching e Custom Parameters
-    try {
-      await trackLeadFromStory(currentStory.order_index, normalizedLink);
-    } catch (error) {
-      // Se houver erro, tenta enviar evento básico
-      console.error('Erro ao rastrear Lead, tentando evento básico:', error);
-      try {
-        const { trackEvent } = await import('@/utils/facebookPixel');
-        await trackEvent('Lead', {
-          content_name: `Story ${currentStory.order_index + 1} Link Click`,
-          content_category: 'Story',
-          content_ids: [`story_${currentStory.order_index}`],
-          value: 0,
-          currency: 'BRL',
-          source: 'Instagram Story',
-          link_url: normalizedLink,
-        }, false, false); // Sem Advanced Matching e Custom Parameters
-      } catch (fallbackError) {
-        console.error('Erro crítico ao enviar evento Lead:', fallbackError);
-      }
-    }
+    // Blindagem de Link: Adicionar parâmetros de rastreamento (UTMs)
+    normalizedLink = appendTrackingParams(normalizedLink);
 
     // Abrir iframe ao invés de nova aba
     setIsPaused(true);
@@ -620,13 +352,8 @@ export default function StoryScreen() {
       );
 
       setStoryMessage("");
-      recordPlaybackEvent({
-        type: 'reply',
-        payload: { length: storyMessage.trim().length },
-      });
-      if (currentStory) {
-        await finalizeStorySession(currentStory, 'chat_reply');
-      }
+      setStoryMessage("");
+      // Navegar para o chat após enviar
       // Navegar para o chat após enviar
       navigate('/chat');
     } catch (error) {
@@ -645,10 +372,10 @@ export default function StoryScreen() {
 
   const handleClose = useCallback(async () => {
     if (currentStory) {
-      await finalizeStorySession(currentStory, 'close_button');
+      // Logic for close button removed
     }
     navigate(-1);
-  }, [currentStory, finalizeStorySession, navigate]);
+  }, [navigate]);
 
   // Swipe down logic
   const minSwipeDistance = 100;
@@ -717,11 +444,9 @@ export default function StoryScreen() {
 
   useEffect(() => {
     return () => {
-      if (previousStoryRef.current) {
-        void finalizeStorySession(previousStoryRef.current, 'screen_unload');
-      }
+      /* Unload cleanup removed */
     };
-  }, [finalizeStorySession]);
+  }, []);
 
   // Loading state
   if (loading) {

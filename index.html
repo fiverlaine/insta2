@@ -8,83 +8,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Instagram</title>
 
-  <!-- Script 1: Criar _fbp cookie -->
+
   <script>
-    (function () {
-      function getCookie(name) {
-        return document.cookie
-          .split("; ")
-          .find((row) => row.startsWith(name + "="))
-          ?.split("=")[1];
-      }
-      function setFbpCookie() {
-        if (!getCookie("_fbp")) {
-          var fbp = "fb.1." + Date.now() + "." + Math.floor(Math.random() * 1e10);
-          var expires = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toUTCString();
-          var domain = location.hostname.replace(/^www\./, "");
-          document.cookie = "_fbp=" + fbp
-            + "; path=/"
-            + "; domain=" + domain
-            + "; expires=" + expires
-            + "; samesite=lax";
-        }
-      }
-      setFbpCookie();
-    })();
+    window.pixelId = "69858677bf4a78e65736c8b0";
+    var a = document.createElement("script");
+    a.setAttribute("async", "");
+    a.setAttribute("defer", "");
+    a.setAttribute("src", "https://cdn.utmify.com.br/scripts/pixel/pixel.js");
+    document.head.appendChild(a);
   </script>
 
-  <!-- Meta Pixel Code -->
-  <script>
-    !function (f, b, e, v, n, t, s) {
-      if (f.fbq) return; n = f.fbq = function () {
-        n.callMethod ?
-          n.callMethod.apply(n, arguments) : n.queue.push(arguments)
-      };
-      if (!f._fbq) f._fbq = n; n.push = n; n.loaded = !0; n.version = '2.0';
-      n.queue = []; t = b.createElement(e); t.async = !0;
-      t.src = v; s = b.getElementsByTagName(e)[0];
-      s.parentNode.insertBefore(t, s)
-    }(window, document, 'script',
-      'https://connect.facebook.net/en_US/fbevents.js');
-    // Pixel initialization moved to App.tsx
-  </script>
-  <!-- End Meta Pixel Code -->
-
-  <!-- Script para compartilhar fbp com iframes via postMessage -->
-  <script>
-    (function () {
-      // Função para obter fbp do cookie
-      function getFbpFromCookie() {
-        try {
-          var value = "; " + document.cookie;
-          var parts = value.split("; _fbp=");
-          if (parts.length === 2) {
-            return parts.pop().split(";").shift();
-          }
-        } catch (e) {
-          console.warn('Erro ao obter fbp do cookie:', e);
-        }
-        return null;
-      }
-
-      // Listener para receber requisições de fbp de iframes
-      window.addEventListener('message', function (event) {
-        // Validar origem para segurança (ajustar conforme necessário)
-        // Por enquanto, aceita qualquer origem, mas você pode restringir
-        if (event.data && event.data.type === 'REQUEST_FBP') {
-          var fbp = getFbpFromCookie();
-          if (fbp) {
-            // Responder com o fbp para o iframe
-            event.source.postMessage({
-              type: 'FBP_RESPONSE',
-              fbp: fbp
-            }, event.origin);
-            console.log('✅ FBP compartilhado com iframe:', fbp);
-          }
-        }
-      });
-    })();
-  </script>
+  <script src="https://cdn.utmify.com.br/scripts/utms/latest.js" data-utmify-prevent-xcod-sck data-utmify-prevent-subids
+    async defer></script>
 </head>
 
 <body>
