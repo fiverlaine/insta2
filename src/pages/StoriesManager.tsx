@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Upload, Eye, EyeOff, Trash2, GripVertical, Play, Image as ImageIcon, Link2, Link2Off, X, MousePointer2 } from "lucide-react";
+import { Upload, Eye, EyeOff, Trash2, Link2, Link2Off, Loader2 } from "lucide-react";
 import { StoryService, type Story } from "@/services/storyService";
 import { MediaService } from "@/services/mediaService";
 import { ProfileService } from "@/services/profileService";
@@ -10,14 +10,12 @@ export default function StoriesManager() {
   const [stories, setStories] = useState<Story[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
-  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
   const [editingLinkStory, setEditingLinkStory] = useState<Story | null>(null);
   const [linkType, setLinkType] = useState<'visible' | 'invisible' | 'none'>('none');
   const [linkPosition, setLinkPosition] = useState({ x: 50, y: 50 });
   const [linkUrl, setLinkUrl] = useState('');
-  const [isDraggingLink, setIsDraggingLink] = useState(false);
-  const previewRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { loadStories(); }, []);
@@ -57,19 +55,58 @@ export default function StoriesManager() {
   };
 
   const handleToggleActive = async (story: Story) => {
-    const profileData = await ProfileService.getProfile(undefined, { forceRefresh: true });
-    if (profileData) {
-      const success = await StoryService.toggleStoryActive(story.id, !story.is_active, profileData.username);
-      if (success) await loadStories();
+    if (togglingId) return;
+    setTogglingId(story.id);
+    try {
+      const profileData = await ProfileService.getProfile(undefined, { forceRefresh: true });
+      if (profileData) {
+        const success = await StoryService.toggleStoryActive(story.id, !story.is_active, profileData.username);
+        if (success) {
+           await loadStories();
+        } else {
+           alert('Erro ao alterar status do story.');
+        }
+      }
+    } catch (error) {
+      console.error(error);
+      alert('Erro ao processar solicitação.');
+    } finally {
+      setTogglingId(null);
     }
+  };
+
+  const handleEditLink = (story: Story) => {
+    setLinkType(story.link_type || 'none');
+    setLinkPosition({ x: story.link_x || 50, y: story.link_y || 50 });
+    setLinkUrl(story.link_url || '');
+    setEditingLinkStory(story);
   };
 
   const saveLinkConfig = async () => {
     if (!editingLinkStory) return;
     const profileData = await ProfileService.getProfile(undefined, { forceRefresh: true });
     if (profileData) {
-      const success = await StoryService.updateStoryLinkConfig(editingLinkStory.id, linkType, linkPosition.x, linkPosition.y, profileData.username, linkUrl);
-      if (success) { await loadStories(); setEditingLinkStory(null); }
+      // Se tiver URL mas tipo for none, sugere visível
+      let finalLinkType = linkType;
+      if (linkUrl && linkType === 'none') {
+         finalLinkType = 'visible';
+      }
+
+      const success = await StoryService.updateStoryLinkConfig(
+        editingLinkStory.id, 
+        finalLinkType, 
+        linkPosition.x, 
+        linkPosition.y, 
+        profileData.username, 
+        linkUrl
+      );
+      
+      if (success) { 
+        await loadStories(); 
+        setEditingLinkStory(null); 
+      } else {
+        alert('Erro ao salvar link.');
+      }
     }
   };
 
@@ -104,11 +141,15 @@ export default function StoriesManager() {
             stories.map((story, i) => (
               <div key={story.id} className={`${styles.storyCard} ${!story.is_active ? styles.inactive : ''}`}>
                 <div className={styles.mediaContainer}>
-                  {story.media_type === 'video' ? <video src={story.media_url} /> : <img src={story.media_url} />}
+                  {story.media_type === 'video' ? <video src={story.media_url} muted loop /> : <img src={story.media_url} />}
                   <div className={styles.overlay}>
                     <button onClick={() => handleDelete(story)} className={styles.danger}><Trash2 size={16}/></button>
-                    <button onClick={() => setEditingLinkStory(story)}><Link2 size={16}/></button>
-                    <button onClick={() => handleToggleActive(story)}>{story.is_active ? <Eye size={16}/> : <EyeOff size={16}/>}</button>
+                    <button onClick={() => handleEditLink(story)}>
+                      {story.link_type !== 'none' ? <Link2 size={16}/> : <Link2Off size={16} style={{opacity: 0.5}} />}
+                    </button>
+                    <button onClick={() => handleToggleActive(story)} disabled={togglingId === story.id}>
+                      {togglingId === story.id ? <Loader2 size={16} className={styles.spin} /> : (story.is_active ? <Eye size={16}/> : <EyeOff size={16}/>)}
+                    </button>
                   </div>
                 </div>
                 <div className={styles.cardInfo}>
@@ -128,10 +169,32 @@ export default function StoriesManager() {
         <div className={styles.modal}>
           <div className={styles.modalInner}>
             <h3>Configurar Link</h3>
+            
+            <div className={styles.field}>
+              <label>Tipo de Link</label>
+              <select 
+                value={linkType} 
+                onChange={e => setLinkType(e.target.value as any)}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.03)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  borderRadius: '12px',
+                  padding: '12px',
+                  color: '#fff',
+                  width: '100%'
+                }}
+              >
+                <option value="none" style={{color: 'black'}}>Sem Link</option>
+                <option value="visible" style={{color: 'black'}}>Link Visível (Adesivo)</option>
+                <option value="invisible" style={{color: 'black'}}>Link Invisível (Tela Cheia)</option>
+              </select>
+            </div>
+
             <div className={styles.field}>
               <label>Link URL</label>
               <input type="text" value={linkUrl} onChange={e => setLinkUrl(e.target.value)} placeholder="https://..." />
             </div>
+
             <div className={styles.modalActions}>
                <button onClick={() => setEditingLinkStory(null)}>Cancelar</button>
                <button onClick={saveLinkConfig} className={styles.saveBtn}>Salvar</button>
