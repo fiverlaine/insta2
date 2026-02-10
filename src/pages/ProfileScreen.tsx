@@ -35,23 +35,7 @@ const IframeWithFbp = ({ src, ...props }: { src: string | null;[key: string]: an
   useEffect(() => {
     const addFbpToUrl = async () => {
       let url = normalizeUrl(src);
-
-      // Adicionar fbp na URL para garantir match entre eventos
-      try {
-        const { getFbpCookie } = await import('@/utils/facebookPixel');
-        const fbp = getFbpCookie();
-        if (fbp) {
-          const urlObj = new URL(url);
-          // Não sobrescrever se já existir
-          if (!urlObj.searchParams.has('fbp')) {
-            urlObj.searchParams.set('fbp', fbp);
-            url = urlObj.toString();
-          }
-        }
-      } catch (fbpError) {
-        console.warn('Erro ao adicionar fbp na URL do iframe:', fbpError);
-      }
-
+      // FBP extraction logic removed to fix build error
       setIframeSrc(url);
     };
 
