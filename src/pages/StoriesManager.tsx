@@ -16,6 +16,8 @@ export default function StoriesManager() {
   const [linkType, setLinkType] = useState<'visible' | 'invisible' | 'none'>('none');
   const [linkPosition, setLinkPosition] = useState({ x: 50, y: 50 });
   const [linkUrl, setLinkUrl] = useState('');
+  const [isDraggingLink, setIsDraggingLink] = useState(false);
+  const previewRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { loadStories(); }, []);
@@ -194,6 +196,58 @@ export default function StoriesManager() {
               <label>Link URL</label>
               <input type="text" value={linkUrl} onChange={e => setLinkUrl(e.target.value)} placeholder="https://..." />
             </div>
+
+            {linkType === 'visible' && (
+              <div className={styles.field}>
+                <label>Posicionamento do Link</label>
+                <div 
+                  ref={previewRef}
+                  className={styles.positionPreview}
+                  onMouseMove={(e) => {
+                    if (isDraggingLink && previewRef.current) {
+                      const rect = previewRef.current.getBoundingClientRect();
+                      const x = ((e.clientX - rect.left) / rect.width) * 100;
+                      const y = ((e.clientY - rect.top) / rect.height) * 100;
+                      setLinkPosition({ x: Math.max(0, Math.min(100, x)), y: Math.max(0, Math.min(100, y)) });
+                    }
+                  }}
+                  onMouseUp={() => setIsDraggingLink(false)}
+                  onMouseLeave={() => setIsDraggingLink(false)}
+                  style={{ position: 'relative', width: '200px', height: '355px', margin: '0 auto', background: '#000', borderRadius: '12px', overflow: 'hidden' }}
+                >
+                  {editingLinkStory.media_type === 'video' ? 
+                    <video src={editingLinkStory.media_url} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.5 }} /> :
+                    <img src={editingLinkStory.media_url} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.5 }} />
+                  }
+                  
+                  <div
+                    onMouseDown={() => setIsDraggingLink(true)}
+                    style={{
+                      position: 'absolute',
+                      left: `${linkPosition.x}%`,
+                      top: `${linkPosition.y}%`,
+                      transform: 'translate(-50%, -50%)',
+                      background: '#fff',
+                      color: '#000',
+                      padding: '4px 8px',
+                      borderRadius: '4px',
+                      fontSize: '10px',
+                      fontWeight: 'bold',
+                      cursor: 'move',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                    }}
+                  >
+                    <Link2 size={10} /> Link
+                  </div>
+                </div>
+                <p style={{fontSize: '11px', color: 'rgba(255,255,255,0.4)', textAlign: 'center', marginTop: '8px'}}>
+                  Arraste o botão para posicionar o link no story
+                </p>
+              </div>
+            )}
 
             <div className={styles.modalActions}>
                <button onClick={() => setEditingLinkStory(null)}>Cancelar</button>
