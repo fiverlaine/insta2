@@ -180,7 +180,7 @@
         };
 
         // Capture UTMs
-        const utmParams = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'src', 'sck', 'vid', 'fbc', 'fbp'];
+        const utmParams = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'src', 'sck', 'vid'];
         utmParams.forEach(p => saveParam(p, new URLSearchParams(window.location.search).get(p)));
 
         function getFullPayload(event, extraData = {}) {
@@ -205,6 +205,7 @@
                 }
             };
         }
+
 
         async function sendToWebhook(payload) {
             console.log('[UTMifyTrack] Sending:', payload.event, payload.data);
