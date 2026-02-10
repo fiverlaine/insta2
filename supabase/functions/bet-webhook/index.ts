@@ -25,10 +25,8 @@ serve(async (req) => {
 
     console.log(`[Webhook] Event: ${event}`, data);
 
-    // Filter: Only process if utmify param is present
     const utmifyParam = data.utmify_param || data.utmify;
     if (!utmifyParam) {
-       console.log(`[Webhook] Ignored - Missing 'utmify' param.`);
        return new Response(JSON.stringify({ success: true, message: "Ignored (No UTMify)" }), {
          headers: { ...corsHeaders, "Content-Type": "application/json" },
        });
@@ -63,37 +61,48 @@ serve(async (req) => {
     else if (event === "pix_generated" || event === "pix_paid") {
       const isPaid = event === "pix_paid";
       const status = isPaid ? "paid" : "waiting_payment";
-      const approvedDate = isPaid ? new Date().toISOString() : null;
-
-      // Update deposits table if we have a transaction ID
-      if (data.txid) {
-          const { error: depositError } = await supabaseClient.from("deposits").upsert({
-            txid: data.txid,
-            amount: parseFloat(data.amount || "0"),
-            status: status,
-            utmify: utmifyParam,
-            utm_source: data.utm_source,
-            utm_medium: data.utm_medium,
-            utm_campaign: data.utm_campaign,
-            utm_content: data.utm_content,
-            utm_term: data.utm_term,
-            src: data.src,
-            sck: data.sck,
-            visitor_id: data.visitor_id,
-            fingerprint: data.fingerprint,
-            ip_address: data.ip || data.ip_address,
-            created_at: new Date().toISOString(),
-          }, { onConflict: 'txid' });
-          
-          if (depositError) console.error("[Webhook] Deposit Error:", depositError);
+      
+      // Tentar encontrar o lead_id pelo email
+      let lead_id = null;
+      if (data.email) {
+        const { data: lead } = await supabaseClient
+          .from("bet_leads")
+          .select("id")
+          .eq("email", data.email)
+          .maybeSingle();
+        if (lead) lead_id = lead.id;
       }
+
+      // Limpar txid (remover espaços e limitar tamanho para evitar erros no banco ou utmify)
+      let cleanTxid = (data.txid || `tx_${Date.now()}`).toString().replace(/\s+/g, '').substring(0, 100);
+
+      // Update deposits table
+      const { error: depositError } = await supabaseClient.from("deposits").upsert({
+        txid: cleanTxid,
+        amount: parseFloat(data.amount || "0"),
+        status: status,
+        lead_id: lead_id,
+        utmify: utmifyParam,
+        utm_source: data.utm_source,
+        utm_medium: data.utm_medium,
+        utm_campaign: data.utm_campaign,
+        utm_content: data.utm_content,
+        utm_term: data.utm_term,
+        src: data.src,
+        sck: data.sck,
+        visitor_id: data.visitor_id,
+        fingerprint: data.fingerprint,
+        ip_address: data.ip || data.ip_address,
+        created_at: data.created_at || new Date().toISOString(),
+      }, { onConflict: 'txid' });
+      
+      if (depositError) console.error("[Webhook] Deposit Error:", depositError);
 
       // 3. Send to Utmify
       try {
-        await sendToUtmify(data, status, approvedDate);
+        await sendToUtmify(data, cleanTxid, status);
       } catch (utmifyErr) {
         console.error("[Webhook] Utmify Error:", utmifyErr);
-        // Don't fail the whole request if Utmify is down
       }
     }
 
@@ -109,19 +118,27 @@ serve(async (req) => {
   }
 });
 
-async function sendToUtmify(data: any, status: string, approvedDate: string | null) {
+function formatUtmifyDate(date: Date) {
+  return date.toISOString().replace('T', ' ').split('.')[0];
+}
+
+async function sendToUtmify(data: any, orderId: string, status: string) {
+  const now = new Date();
+  const approvedDate = status === "paid" ? formatUtmifyDate(now) : null;
+  const createdAt = formatUtmifyDate(now);
+
   const payload = {
-    orderId: data.txid || data.order_id || crypto.randomUUID(),
+    orderId: orderId,
     platform: "BetLion",
     paymentMethod: "pix",
     status: status,
-    createdAt: new Date().toISOString(),
+    createdAt: createdAt,
     approvedDate: approvedDate,
     customer: {
       name: data.name || "Cliente",
       email: data.email || "email@email.com",
       phone: data.phone || "",
-      document: data.cpf || data.document || "",
+      document: (data.cpf || data.document || "").replace(/\D/g, ''), // Limpar máscara do CPF
       ip: data.ip || "",
     },
     products: [
@@ -143,6 +160,8 @@ async function sendToUtmify(data: any, status: string, approvedDate: string | nu
     }
   };
 
+  console.log(`[Utmify] Sending ${status} order ${orderId}`);
+
   const response = await fetch("https://api.utmify.com.br/api-credentials/orders", {
     method: "POST",
     headers: {
@@ -153,9 +172,10 @@ async function sendToUtmify(data: any, status: string, approvedDate: string | nu
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-    console.error(`[Utmify] API Error (${response.status}):`, errorText);
+    const errBody = await response.text();
+    console.error(`[Utmify] Error ${response.status}:`, errBody);
   } else {
-    console.log(`[Utmify] Success for ${status}`);
+    console.log(`[Utmify] Success`);
   }
 }
+
