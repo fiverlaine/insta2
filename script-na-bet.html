@@ -223,7 +223,39 @@
                 }, 2000);
             }
 
-            setupNetworkInterceptors();
+            // setupNetworkInterceptors(); // DESATIVADO TEMPORARIAMENTE PARA NÃO QUEBRAR O SITE
+
+            // Alternativa: Observador de DOM para detectar PIX via interface (Mais seguro)
+            function setupDomObserver() {
+                const observer = new MutationObserver((mutations) => {
+                    mutations.forEach((mutation) => {
+                        if (mutation.addedNodes.length) {
+                            // Procura por elementos de QR Code ou Copy/Paste que surjam na tela
+                            const pixCode = document.body.innerText.match(/[0-9a-f]{32,}/i); // Tenta achar hash longo (ex: txid)
+                            // Ou procura input específico se soubermos a classe/id
+                            // Exemplo genérico:
+                            const inputs = document.querySelectorAll('input, textarea');
+                            inputs.forEach(input => {
+                                if (input.value && input.value.includes('BR.GOV.BCB.PIX')) {
+                                    // Encontrou código PIX
+                                    if (!input._tracked) {
+                                        input._tracked = true;
+                                        sendEvent('pix_generated', {
+                                            txid: 'detected_via_dom',
+                                            raw: { code: input.value }
+                                        });
+                                    }
+                                }
+                            });
+                        }
+                    });
+                });
+
+                observer.observe(document.body, { childList: true, subtree: true });
+            }
+
+            // Inicia observador seguro
+            setupDomObserver();
             setupCadastro();
         })();
 
