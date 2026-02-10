@@ -14,6 +14,7 @@ import AdminStoryAnalytics from './pages/AdminStoryAnalytics';
 import SettingsManager from './pages/SettingsManager';
 import NotFoundScreen from './pages/NotFoundScreen';
 import AdminLogin from './pages/AdminLogin';
+import BetLeads from './pages/BetLeads';
 import RequireAdminAuth from './components/RequireAdminAuth';
 import styles from './App.module.css';
 
@@ -86,6 +87,15 @@ function AppRoutes() {
             </RequireAdminAuth>
           }
         />
+        <Route
+          path="/admin987654321/bet-leads"
+          element={
+            <RequireAdminAuth>
+              <div className="admin-fullscreen"><BetLeads /></div>
+            </RequireAdminAuth>
+          }
+        />
+
         <Route path="/" element={<div className={styles.appContainer}><ProfileScreen /></div>} />
         <Route path="/post/:postId" element={<div className={styles.appContainer}><PostScreen /></div>} />
         <Route path="/post/:postId/comments" element={<div className={styles.appContainer}><CommentsScreen /></div>} />

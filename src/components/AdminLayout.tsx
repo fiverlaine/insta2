@@ -40,7 +40,9 @@ export default function AdminLayout({ children, unreadCount = 0 }: AdminLayoutPr
     { id: 'profile', label: 'Perfil', icon: <User size={20} />, path: '/admin987654321/profile' },
     { id: 'comments', label: 'Interações', icon: <MessageSquare size={20} />, path: '/admin987654321/comments' },
     { id: 'analytics', label: 'Relatórios', icon: <BarChart3 size={20} />, path: '/admin987654321/analytics' },
+    { id: 'bet-leads', label: 'Leads Bet', icon: <ShieldCheck size={20} />, path: '/admin987654321/bet-leads' },
     { id: 'settings', label: 'Configurações', icon: <Settings size={20} />, path: '/admin987654321/settings' },
+
   ];
 
   return (
