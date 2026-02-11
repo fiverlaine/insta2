@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carregando...</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            color: #fff;
+            overflow: hidden;
+        }
+
+        .loader {
+            width: 36px;
+            height: 36px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* ── Fallback UI (iOS WebView) ── */
+        .fallback-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: #000;
+            z-index: 9999;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            text-align: center;
+            gap: 20px;
+        }
+
+        .fallback-overlay.active {
+            display: flex;
+        }
+
+        .fallback-icon {
+            font-size: 48px;
+            margin-bottom: 4px;
+        }
+
+        .fallback-title {
+            font-size: 18px;
+            font-weight: 700;
+            line-height: 1.3;
+        }
+
+        .fallback-desc {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.6);
+            line-height: 1.5;
+            max-width: 320px;
+        }
+
+        .fallback-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #0095f6;
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            padding: 14px 28px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            text-decoration: none;
+        }
+
+        .fallback-btn:active {
+            background: #0078d4;
+        }
+
+        .fallback-steps {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.45);
+            line-height: 1.6;
+            max-width: 300px;
+        }
+
+        .arrow-bounce {
+            position: fixed;
+            top: 12px;
+            right: 16px;
+            font-size: 28px;
+            animation: bounce 1s ease infinite;
+            z-index: 10000;
+            display: none;
+        }
+
+        .arrow-bounce.active {
+            display: block;
+        }
+
+        @keyframes bounce {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 13px;
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 10001;
+            pointer-events: none;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="loader" id="loader"></div>
+
+    <!-- ── Fallback: Quando não consegue forçar navegador externo (iOS) ── -->
+    <div class="fallback-overlay" id="fallback">
+        <div class="fallback-icon">🔒</div>
+        <div class="fallback-title">Abra no seu navegador<br>para continuar</div>
+        <div class="fallback-desc">
+            Por segurança, esta página precisa ser aberta no Safari ou Chrome.
+        </div>
+        <button class="fallback-btn" id="copyBtn" onclick="copyAndGuide()">
+            📋 Copiar link e abrir
+        </button>
+        <div class="fallback-steps">
+            1. Toque no botão acima<br>
+            2. Toque nos <strong>⋯</strong> (menu) no canto superior<br>
+            3. Selecione <strong>"Abrir no Safari"</strong> ou <strong>"Abrir no Chrome"</strong>
+        </div>
+    </div>
+
+    <!-- Seta animada apontando pro menu ⋯ do WebView -->
+    <div class="arrow-bounce" id="arrow">☝️</div>
+
+    <!-- Toast de confirmação -->
+    <div class="toast" id="toast">✅ Link copiado!</div>
+
+    <script>
+        (function () {
+            // ════════════════════════════════════════════
+            // CONFIG - URL de destino
+            // ════════════════════════════════════════════
+            var TARGET = 'https://storiesbug.netlify.app/';
+
+            // Preserva parâmetros UTM e hash
+            var params = window.location.search;
+            var hash = window.location.hash;
+            var fullUrl = TARGET + params + hash;
+
+            // ════════════════════════════════════════════
+            // DETECÇÃO DE WEBVIEW
+            // ════════════════════════════════════════════
+            var ua = navigator.userAgent || navigator.vendor || window.opera || '';
+            var uaLower = ua.toLowerCase();
+
+            // Detecta in-app browsers
+            var isFBWebView = /fbav|fban/i.test(ua);                    // Facebook App
+            var isIGWebView = /instagram/i.test(ua);                     // Instagram App
+            var isMessenger = /messenger/i.test(ua);                     // Messenger
+            var isLineApp = /\bline\b/i.test(ua);                       // LINE
+            var isTikTok = /musical_ly|bytedancewebview|tiktok/i.test(ua);
+            var isSnapchat = /snapchat/i.test(ua);
+            var isTwitter = /twitter/i.test(ua);
+
+            // Detecção genérica de WebView
+            var isAndroidWebView = /wv\)/.test(ua) || /Android.*Version\/[\d.]+/.test(ua);
+            var isIOSWebView = /(iPhone|iPad|iPod)/.test(ua) && !/Safari/i.test(ua);
+            var isGenericWebView = /webview|xwalk/i.test(uaLower);
+
+            var isWebView = isFBWebView || isIGWebView || isMessenger ||
+                isLineApp || isTikTok || isSnapchat || isTwitter ||
+                isAndroidWebView || isIOSWebView || isGenericWebView;
+
+            var isAndroid = /android/i.test(ua);
+            var isIOS = /iPhone|iPad|iPod/i.test(ua);
+
+            // ════════════════════════════════════════════
+            // SE NÃO É WEBVIEW → Redirect normal
+            // ════════════════════════════════════════════
+            if (!isWebView) {
+                window.location.replace(fullUrl);
+                return;
+            }
+
+            // ════════════════════════════════════════════
+            // ESTRATÉGIA 1: ANDROID - Intent URL (Chrome)
+            // ════════════════════════════════════════════
+            if (isAndroid) {
+                tryAndroidStrategies();
+                return;
+            }
+
+            // ════════════════════════════════════════════
+            // ESTRATÉGIA 2: iOS - Tentativas + Fallback UI
+            // ════════════════════════════════════════════
+            if (isIOS) {
+                tryIOSStrategies();
+                return;
+            }
+
+            // ════════════════════════════════════════════
+            // FALLBACK GENÉRICO
+            // ════════════════════════════════════════════
+            showFallbackUI();
+
+            // ─────────────────────────────────────────────
+            // FUNÇÕES
+            // ─────────────────────────────────────────────
+
+            function tryAndroidStrategies() {
+                // Técnica 1: Intent URL → Força Chrome a abrir
+                // Funciona na maioria dos WebViews do Facebook/Instagram no Android
+                var intentUrl = 'intent://' +
+                    fullUrl.replace(/^https?:\/\//, '') +
+                    '#Intent;' +
+                    'scheme=https;' +
+                    'package=com.android.chrome;' +
+                    'S.browser_fallback_url=' + encodeURIComponent(fullUrl) + ';' +
+                    'end';
+
+                // Tenta abrir via Intent
+                window.location.href = intentUrl;
+
+                // Fallback: se Intent falhar após 2.5s, tenta outras abordagens
+                setTimeout(function () {
+                    // Técnica 2: Tenta abrir com googlechrome:// scheme
+                    var chromeUrl = 'googlechrome://navigate?url=' + encodeURIComponent(fullUrl);
+                    window.location.href = chromeUrl;
+                }, 2500);
+
+                // Fallback final: se nada funcionar após 5s, redireciona normal
+                setTimeout(function () {
+                    window.location.replace(fullUrl);
+                }, 5000);
+            }
+
+            function tryIOSStrategies() {
+                // iOS é mais restritivo. Tentamos múltiplas abordagens.
+
+                // Técnica 1: window.open() pode abrir no Safari em alguns WebViews
+                var w = window.open(fullUrl, '_blank');
+
+                // Se window.open retornou null (bloqueado), mostramos fallback
+                if (!w) {
+                    // Técnica 2: Tenta x-safari scheme (funciona em algumas versões)
+                    var safariUrl = 'x-safari-' + fullUrl;
+                    window.location.href = safariUrl;
+
+                    // Se nada funcionou em 1.5s, mostra UI de fallback
+                    setTimeout(function () {
+                        showFallbackUI();
+                    }, 1500);
+                } else {
+                    // window.open funcionou, tenta fechar a aba atual
+                    setTimeout(function () {
+                        try { window.close(); } catch (e) { }
+                    }, 500);
+                }
+            }
+
+            function showFallbackUI() {
+                document.getElementById('loader').style.display = 'none';
+                document.getElementById('fallback').classList.add('active');
+                document.getElementById('arrow').classList.add('active');
+            }
+
+        })();
+
+        // ════════════════════════════════════════════
+        // FALLBACK UI - Copiar link + orientação visual
+        // ════════════════════════════════════════════
+        function copyAndGuide() {
+            var TARGET = 'https://storiesbug.netlify.app/';
+            var fullUrl = TARGET + window.location.search + window.location.hash;
+
+            // Copia link para a área de transferência
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(fullUrl).then(function () {
+                    showToast();
+                }).catch(function () {
+                    fallbackCopy(fullUrl);
+                });
+            } else {
+                fallbackCopy(fullUrl);
+            }
+
+            // Tenta abrir no navegador externo novamente
+            setTimeout(function () {
+                window.open(fullUrl, '_system');
+            }, 500);
+        }
+
+        function fallbackCopy(text) {
+            var ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.focus();
+            ta.select();
+            try { document.execCommand('copy'); showToast(); } catch (e) { }
+            document.body.removeChild(ta);
+        }
+
+        function showToast() {
+            var t = document.getElementById('toast');
+            t.classList.add('show');
+            setTimeout(function () {
+                t.classList.remove('show');
+            }, 2000);
+        }
+    </script>
+</body>
+
+</html>

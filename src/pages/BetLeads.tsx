@@ -7,6 +7,28 @@ import AdminLayout from "@/components/AdminLayout";
 import { BetService } from "@/services/betService";
 import styles from "./BetLeads.module.css";
 
+/**
+ * Limpa nomes de UTM removendo IDs do Facebook e tokens
+ * Ex: "tela fake pedro zutti|120240750683350235" → "tela fake pedro zutti"
+ * Ex: "ADS 02 - RUYTER DUBAI|120240751195340235::PAZXh0bg..." → "ADS 02 - RUYTER DUBAI"
+ */
+function cleanUtmName(raw: string | null | undefined): string {
+  if (!raw) return '-';
+  // Remove tudo após | ou :: (IDs do Facebook / tokens)
+  return raw.split('|')[0].split('::')[0].trim() || '-';
+}
+
+/**
+ * Formata o posicionamento (utm_term) de forma legível
+ * Ex: "Instagram_Reels" → "Reels"
+ * Ex: "Instagram_Feed" → "Feed"
+ * Ex: "Instagram_Stories" → "Stories"
+ */
+function formatPlacement(raw: string | null | undefined): string {
+  if (!raw) return '-';
+  return raw.replace('Instagram_', '').replace('Facebook_', '').trim() || raw;
+}
+
 export default function BetLeads() {
   const [leads, setLeads] = useState<any[]>([]);
   const [deposits, setDeposits] = useState<any[]>([]);
@@ -37,7 +59,6 @@ export default function BetLeads() {
   };
 
   // Unifica os dados para a tabela
-  // Mostramos depósitos (que são cadastros que geraram/pagaram) e novos cadastros que ainda não depositaram
   const unifiedData = [
     ...deposits.map(d => ({
       id: d.id,
@@ -45,12 +66,12 @@ export default function BetLeads() {
       email: d.bet_leads?.email || 'N/A',
       phone: d.bet_leads?.phone || '',
       name: d.bet_leads?.name || 'Cliente',
-      status: d.status, // 'paid' ou 'waiting_payment'
+      status: d.status,
       amount: d.amount,
-      utm_source: d.utm_source,
-      utm_campaign: d.utm_campaign,
+      utm_campaign: d.utm_campaign || d.bet_leads?.utm_campaign,
+      utm_content: d.utm_content || d.bet_leads?.utm_content,
+      utm_term: d.utm_term || d.bet_leads?.utm_term,
       utmify: d.utmify || d.bet_leads?.utmify || 'N/A',
-
       created_at: d.created_at,
       txid: d.txid
     })),
@@ -59,7 +80,6 @@ export default function BetLeads() {
       (l.fingerprint && d.fingerprint === l.fingerprint) ||
       (l.email && d.bet_leads?.email === l.email)
     )).map(l => ({
-
       id: l.id,
       type: 'signup',
       email: l.email,
@@ -67,8 +87,9 @@ export default function BetLeads() {
       name: l.name || 'Cliente',
       status: 'signup',
       amount: 0,
-      utm_source: l.utm_source,
       utm_campaign: l.utm_campaign,
+      utm_content: l.utm_content,
+      utm_term: l.utm_term,
       utmify: l.utmify || 'N/A',
       created_at: l.created_at,
       txid: ''
@@ -76,10 +97,16 @@ export default function BetLeads() {
   ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
   const filteredData = unifiedData.filter(item => {
+    const campaignClean = cleanUtmName(item.utm_campaign).toLowerCase();
+    const contentClean = cleanUtmName(item.utm_content).toLowerCase();
+    const search = searchTerm.toLowerCase();
+    
     const matchesSearch = 
-      item.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.utmify?.toLowerCase().includes(searchTerm.toLowerCase());
+      item.email?.toLowerCase().includes(search) ||
+      item.name?.toLowerCase().includes(search) ||
+      item.utmify?.toLowerCase().includes(search) ||
+      campaignClean.includes(search) ||
+      contentClean.includes(search);
     
     if (filter === "all") return matchesSearch;
     if (filter === "paid") return matchesSearch && item.status === "paid";
@@ -125,7 +152,7 @@ export default function BetLeads() {
             <Search size={18} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.3)' }} />
             <input 
               type="text" 
-              placeholder="Pesquisar por email, nome ou utmify..." 
+              placeholder="Pesquisar por email, nome, conjunto ou anúncio..." 
               className={styles.filterBtn} 
               style={{ width: '100%', paddingLeft: 40, background: 'rgba(255,255,255,0.03)' }}
               value={searchTerm}
@@ -163,7 +190,9 @@ export default function BetLeads() {
             <thead>
               <tr>
                 <th>Cliente</th>
-                <th>Origem / UTMs</th>
+                <th>Conjunto</th>
+                <th>Anúncio</th>
+                <th>Posição</th>
                 <th>Status</th>
                 <th>Valor</th>
                 <th>UTMify</th>
@@ -173,11 +202,11 @@ export default function BetLeads() {
             <tbody>
               {loading && filteredData.length === 0 ? (
                 <tr>
-                  <td colSpan={6} style={{ textAlign: 'center', padding: '40px' }}>Carregando dados...</td>
+                  <td colSpan={8} style={{ textAlign: 'center', padding: '40px' }}>Carregando dados...</td>
                 </tr>
               ) : filteredData.length === 0 ? (
                 <tr>
-                  <td colSpan={6} style={{ textAlign: 'center', padding: '40px' }}>Nenhum lead encontrado.</td>
+                  <td colSpan={8} style={{ textAlign: 'center', padding: '40px' }}>Nenhum lead encontrado.</td>
                 </tr>
               ) : (
                 filteredData.map((item) => (
@@ -187,10 +216,13 @@ export default function BetLeads() {
                       <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>{item.email}</div>
                     </td>
                     <td>
-                      <div>
-                        <span className={styles.utmBadge}>{item.utm_source || 'direct'}</span>
-                        <span className={styles.utmBadge}>{item.utm_campaign || 'N/A'}</span>
-                      </div>
+                      <span className={styles.utmBadge}>{cleanUtmName(item.utm_campaign)}</span>
+                    </td>
+                    <td>
+                      <span className={styles.utmBadge}>{cleanUtmName(item.utm_content)}</span>
+                    </td>
+                    <td>
+                      <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>{formatPlacement(item.utm_term)}</span>
                     </td>
                     <td>
                       <span className={`${styles.status} ${styles[item.status]}`}>
