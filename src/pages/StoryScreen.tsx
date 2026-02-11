@@ -75,11 +75,15 @@ export default function StoryScreen() {
   const backdropRef = useRef<HTMLDivElement>(null);
   const isDraggingRef = useRef(false);
 
-  // ── Tracking state ──
-  const viewSessionRef = useRef<StoryViewSessionContext | null>(null);
-  const viewStartTimeRef = useRef<number>(0);
-  const playbackEventsRef = useRef<StoryPlaybackEvent[]>([]);
-  const committedStoryIdRef = useRef<string | null>(null); // Guard: prevent double-commit
+  // ── Tracking state (per-story Map to avoid race conditions) ──
+  const viewSessionsRef = useRef<Map<string, StoryViewSessionContext>>(new Map());
+  const viewStartTimesRef = useRef<Map<string, number>>(new Map());
+  const playbackEventsMapRef = useRef<Map<string, StoryPlaybackEvent[]>>(new Map());
+  const committedStoryIdsRef = useRef<Set<string>>(new Set());
+  // Promises pendentes de beginViewSession (para aguardar se commit é chamado antes)
+  const pendingSessionsRef = useRef<Map<string, Promise<StoryViewSessionContext | null>>>(new Map());
+  // Keep a "current" playback events ref for pause/resume/mute handlers
+  const currentPlaybackEventsRef = useRef<StoryPlaybackEvent[]>([]);
 
   const { isLiked, toggleLike: toggleLikeFromHook } = useStoryLike(currentStory?.id || '');
 
@@ -96,23 +100,42 @@ export default function StoryScreen() {
     }
   };
 
-  // ── Commit da sessão de tracking (com guard anti-duplicação) ──
-  const commitCurrentSession = useCallback(async (exitReason: StoryViewExitReason) => {
-    const session = viewSessionRef.current;
-    if (!session) return;
-
-    // Guard: se já commitou esta sessão, não faz de novo
-    if (committedStoryIdRef.current === session.storyId) {
+  // ── Commit de uma sessão de tracking por storyId (com guard anti-duplicação) ──
+  const commitSessionForStory = useCallback(async (storyId: string, exitReason: StoryViewExitReason) => {
+    // Guard: se já commitou este story, não faz de novo
+    if (committedStoryIdsRef.current.has(storyId)) {
       return;
     }
-    committedStoryIdRef.current = session.storyId;
 
-    const story = storiesData.find(s => s.id === session.storyId);
+    // Se a sessão ainda não está pronta, aguardar a Promise pendente
+    let session = viewSessionsRef.current.get(storyId);
+    if (!session) {
+      const pendingPromise = pendingSessionsRef.current.get(storyId);
+      if (pendingPromise) {
+        console.log(`⏳ Aguardando beginViewSession para story ${storyId.slice(0, 8)}...`);
+        session = await pendingPromise ?? undefined;
+        if (session) {
+          viewSessionsRef.current.set(storyId, session);
+        }
+      }
+    }
+
+    if (!session) {
+      console.log(`⚠️ Sessão não encontrada para story ${storyId.slice(0, 8)}... (sem dados para commitar)`);
+      return;
+    }
+
+    // Marcar como commitado imediatamente para prevenir double-commit
+    committedStoryIdsRef.current.add(storyId);
+
+    const story = storiesData.find(s => s.id === storyId);
     if (!story) return;
 
-    const watchTimeMs = performanceNow() - viewStartTimeRef.current;
+    const startTime = viewStartTimesRef.current.get(storyId) || performanceNow();
+    const watchTimeMs = performanceNow() - startTime;
     const durationMs = story.duration || 5000;
     const viewedPercentage = Math.min(1, watchTimeMs / durationMs);
+    const events = playbackEventsMapRef.current.get(storyId) || [];
 
     try {
       await StoryViewTrackingService.commitViewSession(session, {
@@ -122,64 +145,90 @@ export default function StoryScreen() {
         exitReason,
         startedAt: new Date(Date.now() - watchTimeMs).toISOString(),
         endedAt: new Date().toISOString(),
-        playbackEvents: playbackEventsRef.current,
+        playbackEvents: events,
         mediaType: story.media_type,
         durationMs,
       });
+      console.log(`✅ View commitada: story ${storyId.slice(0, 8)}... (${exitReason}, ${Math.round(watchTimeMs)}ms, ${Math.round(viewedPercentage * 100)}%)`);
     } catch (err) {
       console.error('❌ Erro ao salvar view do story:', err);
+      // Remove do guard para permitir retry
+      committedStoryIdsRef.current.delete(storyId);
     }
   }, [storiesData, performanceNow]);
+
+  // Compat wrapper: commit the current story's session
+  const commitCurrentSession = useCallback(async (exitReason: StoryViewExitReason) => {
+    if (!currentStory) return;
+    await commitSessionForStory(currentStory.id, exitReason);
+  }, [currentStory, commitSessionForStory]);
 
   // ── Iniciar sessão de tracking quando muda de story ──
   useEffect(() => {
     if (!currentStory) return;
 
-    // Se o viewSession atual já é para este story, não reinicializa
-    if (viewSessionRef.current?.storyId === currentStory.id) return;
+    const storyId = currentStory.id;
 
-    // Limpar guard de commit para o novo story
-    committedStoryIdRef.current = null;
+    // Se já tem sessão para este story (revisita no mesmo carregamento), não reinicializa
+    if (viewSessionsRef.current.has(storyId) && !committedStoryIdsRef.current.has(storyId)) return;
 
-    // Iniciar nova sessão
-    viewStartTimeRef.current = performanceNow();
-    playbackEventsRef.current = [{ type: 'enter', timestamp: new Date().toISOString() }];
+    // Se foi commitado antes (voltou para um story já visto), limpar para permitir re-tracking
+    committedStoryIdsRef.current.delete(storyId);
 
-    StoryViewTrackingService.beginViewSession(currentStory.id)
+    // Preparar tracking data para este story
+    const now = performanceNow();
+    viewStartTimesRef.current.set(storyId, now);
+    const events: StoryPlaybackEvent[] = [{ type: 'enter', timestamp: new Date().toISOString() }];
+    playbackEventsMapRef.current.set(storyId, events);
+    currentPlaybackEventsRef.current = events;
+
+    // Iniciar sessão assíncrona e guardar a Promise
+    const sessionPromise = StoryViewTrackingService.beginViewSession(storyId);
+    pendingSessionsRef.current.set(storyId, sessionPromise);
+
+    sessionPromise
       .then(session => {
+        pendingSessionsRef.current.delete(storyId);
         if (session) {
-          viewSessionRef.current = session;
-          console.log(`👁️ Tracking iniciado: story ${currentStory.id.slice(0, 8)}... ${session.existingView ? '(revisita)' : '(nova view)'}`);
+          viewSessionsRef.current.set(storyId, session);
+          console.log(`👁️ Tracking iniciado: story ${storyId.slice(0, 8)}... ${session.existingView ? '(revisita)' : '(nova view)'}`);
         }
       })
-      .catch(err => console.error('Erro ao iniciar tracking:', err));
+      .catch(err => {
+        pendingSessionsRef.current.delete(storyId);
+        console.error('Erro ao iniciar tracking:', err);
+      });
   }, [currentStory?.id, performanceNow]);
 
   // ── Commit ao sair da página ──
   useEffect(() => {
     const handleBeforeUnload = () => {
-      const session = viewSessionRef.current;
-      if (!session || committedStoryIdRef.current === session.storyId) return;
-      committedStoryIdRef.current = session.storyId;
+      // Commit all un-committed story sessions
+      viewSessionsRef.current.forEach((session, storyId) => {
+        if (committedStoryIdsRef.current.has(storyId)) return;
+        committedStoryIdsRef.current.add(storyId);
 
-      const story = storiesData.find(s => s.id === session.storyId);
-      if (!story) return;
+        const story = storiesData.find(s => s.id === storyId);
+        if (!story) return;
 
-      const watchTimeMs = performanceNow() - viewStartTimeRef.current;
-      const durationMs = story.duration || 5000;
-      const viewedPercentage = Math.min(1, watchTimeMs / durationMs);
+        const startTime = viewStartTimesRef.current.get(storyId) || performanceNow();
+        const watchTimeMs = performanceNow() - startTime;
+        const durationMs = story.duration || 5000;
+        const viewedPercentage = Math.min(1, watchTimeMs / durationMs);
+        const events = playbackEventsMapRef.current.get(storyId) || [];
 
-      StoryViewTrackingService.commitViewSession(session, {
-        watchTimeMs,
-        viewedPercentage,
-        completed: viewedPercentage >= 0.95,
-        exitReason: 'screen_unload',
-        startedAt: new Date(Date.now() - watchTimeMs).toISOString(),
-        endedAt: new Date().toISOString(),
-        playbackEvents: playbackEventsRef.current,
-        mediaType: story.media_type,
-        durationMs,
-      }).catch(() => {});
+        StoryViewTrackingService.commitViewSession(session, {
+          watchTimeMs,
+          viewedPercentage,
+          completed: viewedPercentage >= 0.95,
+          exitReason: 'screen_unload',
+          startedAt: new Date(Date.now() - watchTimeMs).toISOString(),
+          endedAt: new Date().toISOString(),
+          playbackEvents: events,
+          mediaType: story.media_type,
+          durationMs,
+        }).catch(() => {});
+      });
     };
 
     window.addEventListener('beforeunload', handleBeforeUnload);
@@ -189,9 +238,9 @@ export default function StoryScreen() {
   // ── Cleanup ao desmontar componente ──
   useEffect(() => {
     return () => {
-      const session = viewSessionRef.current;
-      if (session && committedStoryIdRef.current !== session.storyId) {
-        commitCurrentSession('close_button');
+      // Commit the current story if not yet committed
+      if (currentStory && !committedStoryIdsRef.current.has(currentStory.id)) {
+        commitSessionForStory(currentStory.id, 'close_button');
       }
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -241,17 +290,22 @@ export default function StoryScreen() {
   };
 
   const handleNext = useCallback((_reason?: string) => {
-    // Registrar evento
-    playbackEventsRef.current.push({
-      type: _reason === 'auto_advance' ? 'complete' : 'exit',
-      timestamp: new Date().toISOString(),
-      progress: progressAnims.current[currentIndex] ?? undefined,
-      payload: { reason: _reason },
-    });
+    const storyId = currentStory?.id;
+    if (storyId) {
+      // Registrar evento nos playbackEvents deste story
+      const events = playbackEventsMapRef.current.get(storyId) || [];
+      events.push({
+        type: _reason === 'auto_advance' ? 'complete' : 'exit',
+        timestamp: new Date().toISOString(),
+        progress: progressAnims.current[currentIndex] ?? undefined,
+        payload: { reason: _reason },
+      });
+      playbackEventsMapRef.current.set(storyId, events);
 
-    // Commitar sessão atual (guard previne double-commit)
-    const exitReason: StoryViewExitReason = _reason === 'auto_advance' ? 'auto_advance' : 'manual_next';
-    commitCurrentSession(exitReason);
+      // Commitar sessão deste story (guard previne double-commit)
+      const exitReason: StoryViewExitReason = _reason === 'auto_advance' ? 'auto_advance' : 'manual_next';
+      commitSessionForStory(storyId, exitReason);
+    }
 
     if (currentIndex < storiesData.length - 1) {
       if (progressAnims.current[currentIndex] !== null) {
@@ -262,7 +316,7 @@ export default function StoryScreen() {
     } else {
       navigate(-1);
     }
-  }, [currentIndex, navigate, storiesData.length, commitCurrentSession]);
+  }, [currentIndex, navigate, storiesData.length, currentStory, commitSessionForStory]);
 
   const handlePrevious = useCallback(() => {
     if (currentIndex > 0) {
@@ -348,12 +402,12 @@ export default function StoryScreen() {
 
   const handleMouseDown = () => {
     setIsPaused(true);
-    playbackEventsRef.current.push({ type: 'pause', timestamp: new Date().toISOString() });
+    currentPlaybackEventsRef.current.push({ type: 'pause', timestamp: new Date().toISOString() });
   };
 
   const handleMouseUp = () => {
     setIsPaused(false);
-    playbackEventsRef.current.push({ type: 'resume', timestamp: new Date().toISOString() });
+    currentPlaybackEventsRef.current.push({ type: 'resume', timestamp: new Date().toISOString() });
   };
 
   const handleFollow = async () => { await toggleFollow(); };
@@ -362,7 +416,7 @@ export default function StoryScreen() {
     setIsMuted((prev) => {
       const nextMuted = !prev;
       if (videoRef.current) videoRef.current.muted = nextMuted;
-      playbackEventsRef.current.push({ type: 'mute_toggle', timestamp: new Date().toISOString(), payload: { muted: nextMuted } });
+      currentPlaybackEventsRef.current.push({ type: 'mute_toggle', timestamp: new Date().toISOString(), payload: { muted: nextMuted } });
       return nextMuted;
     });
   };
@@ -381,7 +435,7 @@ export default function StoryScreen() {
     normalizedLink = appendTrackingParams(normalizedLink);
 
     // Registrar evento de link click
-    playbackEventsRef.current.push({ type: 'link', timestamp: new Date().toISOString(), payload: { url: normalizedLink } });
+    currentPlaybackEventsRef.current.push({ type: 'link', timestamp: new Date().toISOString(), payload: { url: normalizedLink } });
     commitCurrentSession('link_click');
 
     setIsPaused(true);
@@ -423,7 +477,7 @@ export default function StoryScreen() {
         storyThumbnail
       );
 
-      playbackEventsRef.current.push({ type: 'reply', timestamp: new Date().toISOString() });
+      currentPlaybackEventsRef.current.push({ type: 'reply', timestamp: new Date().toISOString() });
       setStoryMessage("");
       navigate('/chat');
     } catch (error) {

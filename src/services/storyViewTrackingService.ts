@@ -176,12 +176,43 @@ export interface ViewsByCity {
  * Serviço de Tracking de Visualizações de Stories
  */
 export class StoryViewTrackingService {
+  // ── Cache do fingerprint (gera apenas 1x por sessão de página) ──
+  private static cachedFingerprint: VisitorFingerprint | null = null;
+  private static fingerprintPromise: Promise<VisitorFingerprint> | null = null;
+
+  /**
+   * Obtém o fingerprint cacheado ou gera um novo (apenas na primeira vez)
+   */
+  private static async getCachedFingerprint(): Promise<VisitorFingerprint> {
+    if (this.cachedFingerprint) {
+      return this.cachedFingerprint;
+    }
+
+    // Se já tem uma geração em andamento, aguarda ela
+    if (this.fingerprintPromise) {
+      return this.fingerprintPromise;
+    }
+
+    // Gera pela primeira vez e cacheia a Promise
+    this.fingerprintPromise = FingerprintService.generateFingerprint().then(fp => {
+      this.cachedFingerprint = fp;
+      this.fingerprintPromise = null;
+      return fp;
+    }).catch(err => {
+      this.fingerprintPromise = null;
+      throw err;
+    });
+
+    return this.fingerprintPromise;
+  }
+
   /**
    * Inicia uma sessão de visualização (gera fingerprint e identifica estado atual)
+   * O fingerprint é cacheado: a primeira chamada leva ~3-5s, as demais são instantâneas.
    */
   public static async beginViewSession(storyId: string): Promise<StoryViewSessionContext | null> {
     try {
-      const fingerprint = await FingerprintService.generateFingerprint();
+      const fingerprint = await this.getCachedFingerprint();
       const visitorId = getVisitorId();
       const sessionId = this.generateSessionId();
 
