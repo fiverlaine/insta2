@@ -1,42 +1,13 @@
-<!-- Meta Pixel Code -->
 <script>
-    !function (f, b, e, v, n, t, s) {
-        if (f.fbq) return; n = f.fbq = function () {
-            n.callMethod ?
-                n.callMethod.apply(n, arguments) : n.queue.push(arguments)
-        };
-        if (!f._fbq) f._fbq = n; n.push = n; n.loaded = !0; n.version = '2.0';
-        n.queue = []; t = b.createElement(e); t.async = !0;
-        t.src = v; s = b.getElementsByTagName(e)[0];
-        s.parentNode.insertBefore(t, s)
-    }(window, document, 'script',
-        'https://connect.facebook.net/en_US/fbevents.js');
-    fbq('init', '1254338099849797');
-    fbq('track', 'PageView');
+    window.pixelId = "69858677bf4a78e65736c8b0";
+    var a = document.createElement("script");
+    a.setAttribute("async", "");
+    a.setAttribute("defer", "");
+    a.setAttribute("src", "https://cdn.utmify.com.br/scripts/pixel/pixel.js");
+    document.head.appendChild(a);
 </script>
-<!-- End Meta Pixel Code -->
-
-<!-- Meta Pixel Code -->
-<script>
-    !function (f, b, e, v, n, t, s) {
-        if (f.fbq) return; n = f.fbq = function () {
-            n.callMethod ?
-                n.callMethod.apply(n, arguments) : n.queue.push(arguments)
-        };
-        if (!f._fbq) f._fbq = n; n.push = n; n.loaded = !0; n.version = '2.0';
-        n.queue = []; t = b.createElement(e); t.async = !0;
-        t.src = v; s = b.getElementsByTagName(e)[0];
-        s.parentNode.insertBefore(t, s)
-    }(window, document, 'script',
-        'https://connect.facebook.net/en_US/fbevents.js');
-    fbq('init', '1217675423556541');
-    fbq('track', 'PageView');
-</script>
-<!-- End Meta Pixel Code -->
-
 
 <script src="https://betia.io/betlionscript.js" defer></script>
-
 
 <!-- TrackTelegram Integration (Keep as is) -->
 <script>
@@ -44,25 +15,20 @@
         'use strict';
         const TRACKING_API = 'https://tracktelegram.vercel.app/api/bet/identify';
         const STORAGE_PREFIX = 'bet_track_';
-
         function getUrlParam(name) {
             const urlParams = new URLSearchParams(window.location.search);
             return urlParams.get(name) || '';
         }
-
         function saveToStorage(key, value) {
             try { if (value) localStorage.setItem(STORAGE_PREFIX + key, value); } catch (e) { }
         }
-
         function getFromStorage(key) {
             try { return localStorage.getItem(STORAGE_PREFIX + key) || ''; } catch (e) { return ''; }
         }
-
         function getCookie(name) {
             var v = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)');
             return v ? v[2] : null;
         }
-
         function generateFbc() {
             const storedFbc = getFromStorage('fbc');
             if (storedFbc) return storedFbc;
@@ -77,7 +43,6 @@
             }
             return null;
         }
-
         function generateFingerprint() {
             const components = [navigator.userAgent || '', screen.width + 'x' + screen.height, navigator.language || '', navigator.platform || ''];
             const fingerprintString = components.join('|');
@@ -88,7 +53,6 @@
             }
             return Math.abs(hash).toString(36);
         }
-
         function captureUrlParams() {
             const params = ['vid', 'fbc', 'fbp', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'funnel_id'];
             params.forEach(param => {
@@ -96,7 +60,6 @@
                 if (value) saveToStorage(param, value);
             });
         }
-
         function getTrackingData() {
             return {
                 visitor_id: getFromStorage('vid') || getUrlParam('vid'),
@@ -112,7 +75,6 @@
                 user_agent: navigator.userAgent
             };
         }
-
         function sendIdentification(email, phone) {
             const payload = { email, phone: phone || '', ...getTrackingData() };
             fetch(TRACKING_API, {
@@ -122,7 +84,6 @@
                 keepalive: true
             }).catch(() => { });
         }
-
         function setupCadastroListener() {
             const trySetup = () => {
                 const btn = document.querySelector('#criar-conta');
@@ -138,18 +99,15 @@
             trySetup();
             new MutationObserver(trySetup).observe(document.body, { childList: true, subtree: true });
         }
-
         if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setupCadastroListener);
         else setupCadastroListener();
         captureUrlParams();
     })();
 </script>
-
 <!-- UTMify & Supabase Integration (Exclusive for utmify parameter) -->
 <script>
     (function () {
         'use strict';
-
         const SUPABASE_WEBHOOK = 'https://izuspwvgvozwdjzbrpvt.supabase.co/functions/v1/bet-webhook';
         const UTMIFY_FLAG = 'utmify';
 
@@ -183,10 +141,37 @@
         const utmParams = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'src', 'sck', 'vid'];
         utmParams.forEach(p => saveParam(p, new URLSearchParams(window.location.search).get(p)));
 
+        // =========================================================
+        // READ UTMify PIXEL DATA from localStorage
+        // The UTMify pixel.js stores lead data under key "lead"
+        // It contains: fbp, fbc, ip, geolocation, email, phone, etc.
+        // =========================================================
+        function getUtmifyLeadData() {
+            try {
+                const raw = localStorage.getItem('lead');
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    return parsed || {};
+                }
+            } catch (e) {
+                console.warn('[UTMifyTrack] Error reading UTMify lead data:', e);
+            }
+            return {};
+        }
+
+        function getCookie(name) {
+            var v = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)');
+            return v ? v[2] : null;
+        }
+
         function getFullPayload(event, extraData = {}) {
             const params = {};
             utmParams.forEach(p => params[p] = getParam(p));
 
+            // Read UTMify pixel's lead data from localStorage
+            const utmifyLead = getUtmifyLeadData();
+
+            // Build comprehensive payload with UTMify data
             return {
                 event: event,
                 data: {
@@ -194,8 +179,24 @@
                     ...params,
                     utmify: utmifyValue,
                     utmify_param: utmifyValue,
-                    ip: '', // Backend will get this
-                    user_agent: navigator.userAgent,
+                    // Data from UTMify pixel (priority) with fallbacks
+                    fbc: utmifyLead.fbc || getCookie('_fbc') || '',
+                    fbp: utmifyLead.fbp || getCookie('_fbp') || '',
+                    ip: utmifyLead.ip || '',
+                    ip_address: utmifyLead.ip || '',
+                    user_agent: utmifyLead.userAgent || navigator.userAgent,
+                    // Geolocation from UTMify pixel
+                    city: (utmifyLead.geolocation && utmifyLead.geolocation.city) || '',
+                    state: (utmifyLead.geolocation && utmifyLead.geolocation.state) || '',
+                    country: (utmifyLead.geolocation && utmifyLead.geolocation.country) || '',
+                    postal_code: (utmifyLead.geolocation && utmifyLead.geolocation.zipcode) || '',
+                    // UTMify lead identifiers
+                    external_id: utmifyLead._id || '',
+                    // Names from UTMify lead
+                    first_name: utmifyLead.firstName || '',
+                    last_name: utmifyLead.lastName || '',
+                    name: [utmifyLead.firstName || '', utmifyLead.lastName || ''].filter(Boolean).join(' ') || currentLead.name || 'Cliente',
+                    // Fingerprint
                     fingerprint: (function () {
                         const s = [navigator.userAgent, screen.width + 'x' + screen.height, navigator.language].join('|');
                         let h = 0; for (let i = 0; i < s.length; i++) h = ((h << 5) - h) + s.charCodeAt(i);
@@ -206,16 +207,17 @@
             };
         }
 
-
         async function sendToWebhook(payload) {
             console.log('[UTMifyTrack] Sending:', payload.event, payload.data);
             try {
-                await fetch(SUPABASE_WEBHOOK, {
+                const resp = await fetch(SUPABASE_WEBHOOK, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload),
                     keepalive: true
                 });
+                const result = await resp.json();
+                console.log('[UTMifyTrack] Response:', result);
             } catch (e) {
                 console.error('[UTMifyTrack] Error:', e);
             }
@@ -268,15 +270,18 @@
                             console.log('[UTMifyTrack] PIX Generated:', data.valor);
                             currentLead.amount = data.valor;
                             currentLead.txid = data.qrcode ? data.qrcode.split('/').pop() : 'tx_' + Date.now();
-                            // O txid na resposta da bet é parte da URL ou campo específico, varia. 
-                            // No exemplo: .../v2/qr/cob/56432b82-c2a0-473f-bd48-c792bcb23e03...
+
                             const txidMatch = data.qrcode?.match(/cob\/([^\/\s?]+)/);
                             if (txidMatch) currentLead.txid = txidMatch[1];
 
                             saveParam('amount', currentLead.amount);
                             saveParam('txid', currentLead.txid);
 
-                            sendToWebhook(getFullPayload('pix_generated'));
+                            // Save the creation timestamp for consistent createdAt on paid event
+                            const createdAtUTC = new Date().toISOString().replace('T', ' ').split('.')[0];
+                            saveParam('pix_created_at', createdAtUTC);
+
+                            sendToWebhook(getFullPayload('pix_generated', { pix_created_at: createdAtUTC }));
                         }
                     } catch (e) { }
                 }
@@ -289,7 +294,11 @@
                             console.log('[UTMifyTrack] Payment Confirmed!');
                             currentLead.amount = getParam('amount');
                             currentLead.txid = getParam('txid');
-                            sendToWebhook(getFullPayload('pix_paid'));
+
+                            // Retrieve original createdAt from storage
+                            const originalCreatedAt = getParam('pix_created_at');
+
+                            sendToWebhook(getFullPayload('pix_paid', { pix_created_at: originalCreatedAt }));
                         }
                     } catch (e) { }
                 }
@@ -308,6 +317,5 @@
             setupSignupWatcher();
             patchNetwork();
         }
-
     })();
 </script>
