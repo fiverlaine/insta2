@@ -7,6 +7,12 @@ import { ChatService } from "@/services/chatService";
 import { StoryService, type Story } from "@/services/storyService";
 import { MediaService } from "@/services/mediaService";
 import { ProfileService, type ProfileSettings } from "@/services/profileService";
+import {
+  StoryViewTrackingService,
+  type StoryViewSessionContext,
+  type StoryPlaybackEvent,
+  type StoryViewExitReason,
+} from "@/services/storyViewTrackingService";
 import { supabase } from "@/lib/supabase";
 import styles from "./StoryScreen.module.css";
 
@@ -38,8 +44,6 @@ const appendTrackingParams = (targetUrl: string) => {
     paramsToForward.forEach(param => {
       const value = currentParams.get(param);
       if (value) {
-        // Só adiciona se não existir na URL de destino (ou sobrescreve se preferir, aqui optamos por preservar destino se já tiver, mas geralmente o tráfego novo manda)
-        // Para garantir que o rastreamento mais recente prevaleça, vamos sobrescrever ou adicionar
         urlObj.searchParams.set(param, value);
       }
     });
@@ -51,7 +55,6 @@ const appendTrackingParams = (targetUrl: string) => {
   }
 };
 
-// Componente para iframe com fbp na URL
 // Componente para iframe simplificado (sem injeção de FBP)
 const IframeWithFbp = ({ src, ...props }: { src: string | null;[key: string]: any }) => {
   if (!src) return null;
@@ -83,10 +86,14 @@ export default function StoryScreen() {
   const backdropRef = useRef<HTMLDivElement>(null);
   const isDraggingRef = useRef(false);
 
+  // ── Tracking refs ──
+  const viewSessionRef = useRef<StoryViewSessionContext | null>(null);
+  const viewStartTimeRef = useRef<number>(0);
+  const playbackEventsRef = useRef<StoryPlaybackEvent[]>([]);
+  const trackingInitializedRef = useRef<string | null>(null); // storyId que já foi inicializado
+
   // Hook de like - sempre chamado, mas só funciona quando há story válido
   const { isLiked, toggleLike: toggleLikeFromHook } = useStoryLike(currentStory?.id || '');
-
-
 
   const performanceNow = useCallback(() => {
     if (typeof performance !== 'undefined' && typeof performance.now === 'function') {
@@ -101,10 +108,105 @@ export default function StoryScreen() {
     }
   };
 
+  // ── Funções de tracking ──
+  const commitCurrentSession = useCallback(async (exitReason: StoryViewExitReason) => {
+    const session = viewSessionRef.current;
+    if (!session) return;
+
+    const story = storiesData.find(s => s.id === session.storyId);
+    if (!story) return;
+
+    const watchTimeMs = performanceNow() - viewStartTimeRef.current;
+    const durationMs = story.duration || 5000;
+    const viewedPercentage = Math.min(1, watchTimeMs / durationMs);
+
+    try {
+      await StoryViewTrackingService.commitViewSession(session, {
+        watchTimeMs,
+        viewedPercentage,
+        completed: viewedPercentage >= 0.95,
+        exitReason,
+        startedAt: new Date(Date.now() - watchTimeMs).toISOString(),
+        endedAt: new Date().toISOString(),
+        playbackEvents: playbackEventsRef.current,
+        mediaType: story.media_type,
+        durationMs,
+      });
+    } catch (err) {
+      console.error('❌ Erro ao salvar view do story:', err);
+    }
+  }, [storiesData, performanceNow]);
+
+  // ── Iniciar sessão de tracking quando muda de story ──
+  useEffect(() => {
+    if (!currentStory) return;
+
+    // Evitar dupla inicialização para o mesmo story
+    if (trackingInitializedRef.current === currentStory.id) return;
+    trackingInitializedRef.current = currentStory.id;
+
+    // Commitar sessão anterior antes de iniciar nova
+    if (viewSessionRef.current && viewSessionRef.current.storyId !== currentStory.id) {
+      commitCurrentSession('story_switch');
+    }
+
+    // Iniciar nova sessão
+    viewStartTimeRef.current = performanceNow();
+    playbackEventsRef.current = [{ type: 'enter', timestamp: new Date().toISOString() }];
+
+    StoryViewTrackingService.beginViewSession(currentStory.id)
+      .then(session => {
+        if (session) {
+          viewSessionRef.current = session;
+          console.log(`👁️ Tracking iniciado para story ${currentStory.id}`);
+        }
+      })
+      .catch(err => console.error('Erro ao iniciar tracking:', err));
+  }, [currentStory?.id, performanceNow, commitCurrentSession]);
+
+  // ── Commit ao sair da página ou fechar ──
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (viewSessionRef.current) {
+        // Usar sendBeacon via commitCurrentSession de forma sync-safe
+        const session = viewSessionRef.current;
+        const story = storiesData.find(s => s.id === session.storyId);
+        if (!story) return;
+        const watchTimeMs = performanceNow() - viewStartTimeRef.current;
+        const durationMs = story.duration || 5000;
+        const viewedPercentage = Math.min(1, watchTimeMs / durationMs);
+
+        // Fire-and-forget: usar supabase diretamente para garantir que o request sai
+        StoryViewTrackingService.commitViewSession(session, {
+          watchTimeMs,
+          viewedPercentage,
+          completed: viewedPercentage >= 0.95,
+          exitReason: 'screen_unload',
+          startedAt: new Date(Date.now() - watchTimeMs).toISOString(),
+          endedAt: new Date().toISOString(),
+          playbackEvents: playbackEventsRef.current,
+          mediaType: story.media_type,
+          durationMs,
+        }).catch(() => {});
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [storiesData, performanceNow]);
+
+  // ── Cleanup ao desmontar componente ──
+  useEffect(() => {
+    return () => {
+      if (viewSessionRef.current) {
+        commitCurrentSession('close_button');
+      }
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Carregar stories e perfil do Supabase
   useEffect(() => {
-    // Limpar cache de stories ao carregar para garantir dados atualizados
-    // Isso resolve problemas de cache desatualizado
     StoryService.clearAllStoriesCache();
     loadProfileAndStories();
   }, []);
@@ -112,21 +214,18 @@ export default function StoryScreen() {
   const loadProfileAndStories = async () => {
     try {
       setLoading(true);
-      // Carregar perfil primeiro - forçar refresh para garantir dados atualizados
       const profileData = await ProfileService.getProfile(undefined, { forceRefresh: true });
 
       if (profileData) {
         console.log('✅ Perfil carregado:', { username: profileData.username, name: profileData.name });
         setProfile(profileData);
 
-        // Carregar stories com o username correto
         console.log(`🔍 Buscando stories para username: "${profileData.username}"`);
         const stories = await StoryService.getActiveStories(profileData.username);
         console.log(`📊 Stories encontrados: ${stories.length}`, stories.map(s => ({ id: s.id, order: s.order_index, active: s.is_active })));
 
         setStoriesData(stories);
 
-        // Se veio um storyId na URL, encontrar o índice dele
         if (storyIdFromUrl && stories.length > 0) {
           const storyIndex = stories.findIndex(s => s.id === storyIdFromUrl);
           if (storyIndex !== -1) {
@@ -136,7 +235,6 @@ export default function StoryScreen() {
         }
       } else {
         console.error('❌ Perfil não encontrado - tentando buscar sem filtro de is_active');
-        // Fallback: tentar buscar qualquer perfil se não encontrar ativo
         try {
           const { data: fallbackProfile } = await supabase
             .from('profile_settings')
@@ -162,24 +260,42 @@ export default function StoryScreen() {
     }
   };
 
-
-
-  /* Tracking effects removed */
-
   const handleNext = useCallback((_reason?: string) => {
+    // Reset tracking para permitir inicialização do próximo story
+    trackingInitializedRef.current = null;
+
     if (currentIndex < storiesData.length - 1) {
       if (progressAnims.current[currentIndex] !== null) {
         progressAnims.current[currentIndex] = 1;
         updateProgressBar(currentIndex, 1);
       }
+
+      // Registrar evento de avanço
+      playbackEventsRef.current.push({
+        type: _reason === 'auto_advance' ? 'complete' : 'exit',
+        timestamp: new Date().toISOString(),
+        progress: progressAnims.current[currentIndex] ?? undefined,
+        payload: { reason: _reason },
+      });
+
+      // Commitar sessão atual
+      const exitReason: StoryViewExitReason = _reason === 'auto_advance' ? 'auto_advance' : 'manual_next';
+      commitCurrentSession(exitReason);
+
       setCurrentIndex(currentIndex + 1);
     } else {
+      // Último story — commitar e sair
+      commitCurrentSession(_reason === 'auto_advance' ? 'auto_advance' : 'manual_next');
       navigate(-1);
     }
-  }, [currentIndex, navigate, storiesData.length]);
+  }, [currentIndex, navigate, storiesData.length, commitCurrentSession]);
 
   const handlePrevious = useCallback(() => {
+    trackingInitializedRef.current = null;
+
     if (currentIndex > 0) {
+      commitCurrentSession('manual_previous');
+
       if (progressAnims.current[currentIndex] !== null) {
         progressAnims.current[currentIndex] = 0;
         updateProgressBar(currentIndex, 0);
@@ -190,7 +306,7 @@ export default function StoryScreen() {
         updateProgressBar(currentIndex - 1, 0);
       }
     }
-  }, [currentIndex]);
+  }, [currentIndex, commitCurrentSession]);
 
   const updateProgressBar = (index: number, progress: number) => {
     const bar = progressRefs.current[index];
@@ -212,7 +328,6 @@ export default function StoryScreen() {
     if (currentIndex < storiesData.length - 1) {
       const nextStory = storiesData[currentIndex + 1];
       if (nextStory && nextStory.media_type === 'image') {
-        // Pré-carregar próxima imagem
         const img = new Image();
         img.src = nextStory.media_url;
       }
@@ -239,8 +354,6 @@ export default function StoryScreen() {
 
       progressAnims.current[currentIndex] = progress;
       updateProgressBar(currentIndex, progress);
-
-      /* Tracking block removed */
 
       if (progress >= 1) {
         handleNext('auto_advance');
@@ -269,10 +382,12 @@ export default function StoryScreen() {
 
   const handleMouseDown = () => {
     setIsPaused(true);
+    playbackEventsRef.current.push({ type: 'pause', timestamp: new Date().toISOString() });
   };
 
   const handleMouseUp = () => {
     setIsPaused(false);
+    playbackEventsRef.current.push({ type: 'resume', timestamp: new Date().toISOString() });
   };
 
   const handleFollow = async () => {
@@ -285,6 +400,7 @@ export default function StoryScreen() {
       if (videoRef.current) {
         videoRef.current.muted = nextMuted;
       }
+      playbackEventsRef.current.push({ type: 'mute_toggle', timestamp: new Date().toISOString(), payload: { muted: nextMuted } });
       return nextMuted;
     });
   };
@@ -294,7 +410,7 @@ export default function StoryScreen() {
   const handleVideoPause = () => {};
 
   const handleLinkClick = async (e: React.MouseEvent | React.TouchEvent) => {
-    e.stopPropagation(); // Evita pausar o story
+    e.stopPropagation();
 
     if (!currentStory) return;
 
@@ -306,7 +422,10 @@ export default function StoryScreen() {
     // Blindagem de Link: Adicionar parâmetros de rastreamento (UTMs)
     normalizedLink = appendTrackingParams(normalizedLink);
 
-    // Abrir iframe ao invés de nova aba
+    // Registrar evento de link click no tracking
+    playbackEventsRef.current.push({ type: 'link', timestamp: new Date().toISOString(), payload: { url: normalizedLink } });
+    commitCurrentSession('link_click');
+
     setIsPaused(true);
     window.open(normalizedLink, '_blank');
   };
@@ -341,20 +460,20 @@ export default function StoryScreen() {
 
       await ChatService.sendMessage(
         storyMessage,
-        undefined, // mediaUrl
-        undefined, // mediaType
-        undefined, // mediaThumbnail
-        undefined, // mediaDuration
-        currentStory.media_url, // repliedToStoryMediaUrl
-        currentStory.media_type, // repliedToStoryMediaType
-        currentStory.id, // repliedToStoryId
-        storyThumbnail // repliedToStoryThumbnail
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        currentStory.media_url,
+        currentStory.media_type,
+        currentStory.id,
+        storyThumbnail
       );
 
+      // Registrar evento de reply no tracking
+      playbackEventsRef.current.push({ type: 'reply', timestamp: new Date().toISOString() });
+
       setStoryMessage("");
-      setStoryMessage("");
-      // Navegar para o chat após enviar
-      // Navegar para o chat após enviar
       navigate('/chat');
     } catch (error) {
       console.error('Erro ao enviar resposta ao story:', error);
@@ -371,11 +490,10 @@ export default function StoryScreen() {
   };
 
   const handleClose = useCallback(async () => {
-    if (currentStory) {
-      // Logic for close button removed
-    }
+    trackingInitializedRef.current = null;
+    await commitCurrentSession('close_button');
     navigate(-1);
-  }, [navigate]);
+  }, [navigate, commitCurrentSession]);
 
   // Swipe down logic
   const minSwipeDistance = 100;
@@ -384,7 +502,6 @@ export default function StoryScreen() {
     touchStartY.current = e.touches[0].clientY;
     isDraggingRef.current = true;
 
-    // Remove transitions during drag
     if (contentRef.current) contentRef.current.style.transition = 'none';
     if (backdropRef.current) backdropRef.current.style.transition = 'none';
   };
@@ -395,7 +512,7 @@ export default function StoryScreen() {
     const currentY = e.touches[0].clientY;
     const deltaY = currentY - touchStartY.current;
 
-    if (deltaY < 0) return; // Ignore swipe up
+    if (deltaY < 0) return;
 
     if (contentRef.current && backdropRef.current) {
       const scale = Math.max(0.8, 1 - (deltaY / window.innerHeight) * 0.4);
@@ -416,7 +533,6 @@ export default function StoryScreen() {
     const deltaY = touchEndY - touchStartY.current;
 
     if (deltaY > minSwipeDistance) {
-      // Animate out
       if (contentRef.current && backdropRef.current) {
         contentRef.current.style.transition = 'transform 0.3s ease-out';
         contentRef.current.style.transform = `translateY(100vh) scale(0.5)`;
@@ -430,7 +546,6 @@ export default function StoryScreen() {
         handleClose();
       }
     } else {
-      // Reset
       if (contentRef.current && backdropRef.current) {
         contentRef.current.style.transition = 'transform 0.3s ease-out, border-radius 0.3s ease-out';
         contentRef.current.style.transform = '';
@@ -441,12 +556,6 @@ export default function StoryScreen() {
     }
     touchStartY.current = null;
   };
-
-  useEffect(() => {
-    return () => {
-      /* Unload cleanup removed */
-    };
-  }, []);
 
   // Loading state
   if (loading) {
@@ -581,7 +690,7 @@ export default function StoryScreen() {
             />
           </div>
 
-          {/* Botão de link visual igual ao Instagram - exibido quando link_type é visible ou show_link é true (legacy) */}
+          {/* Botão de link visual igual ao Instagram */}
           {currentStory && (currentStory.link_type === 'visible' || (!currentStory.link_type && currentStory.show_link)) && (currentStory.link_url || profile?.link) && (
             <button
               className={styles.storyLinkButton}
@@ -614,7 +723,6 @@ export default function StoryScreen() {
                 transform: 'translate(-50%, -50%)',
                 zIndex: 20,
                 cursor: 'pointer',
-                // backgroundColor: 'rgba(255, 0, 0, 0.2)', // Descomentar para debug
               }}
               onClick={handleLinkClick}
               onTouchEnd={handleLinkClick}
