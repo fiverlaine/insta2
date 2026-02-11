@@ -373,7 +373,7 @@ export class StoryViewTrackingService {
     try {
       const { data, error } = await supabase
         .from('story_views')
-        .select('country, session_count')
+        .select('country, fingerprint')
         .eq('story_id', storyId)
         .not('country', 'is', null);
 
@@ -382,15 +382,16 @@ export class StoryViewTrackingService {
         return [];
       }
 
-      const countryMap = new Map<string, number>();
+      // Contar visitantes únicos por país (1 fingerprint = 1 view)
+      const countryMap = new Map<string, Set<string>>();
       data.forEach((view: any) => {
         const country = view.country;
-        const sessions = view.session_count ?? 1;
-        countryMap.set(country, (countryMap.get(country) || 0) + sessions);
+        if (!countryMap.has(country)) countryMap.set(country, new Set());
+        countryMap.get(country)!.add(view.fingerprint);
       });
 
       return Array.from(countryMap.entries())
-        .map(([country, count]) => ({ country, count }))
+        .map(([country, fps]) => ({ country, count: fps.size }))
         .sort((a, b) => b.count - a.count);
     } catch (error) {
       console.error('❌ Erro ao obter views por país:', error);
@@ -405,7 +406,7 @@ export class StoryViewTrackingService {
     try {
       const { data, error } = await supabase
         .from('story_views')
-        .select('device_type, session_count')
+        .select('device_type, fingerprint')
         .eq('story_id', storyId)
         .not('device_type', 'is', null);
 
@@ -414,15 +415,16 @@ export class StoryViewTrackingService {
         return [];
       }
 
-      const deviceMap = new Map<string, number>();
+      // Contar visitantes únicos por dispositivo
+      const deviceMap = new Map<string, Set<string>>();
       data.forEach((view: any) => {
         const device = view.device_type;
-        const sessions = view.session_count ?? 1;
-        deviceMap.set(device, (deviceMap.get(device) || 0) + sessions);
+        if (!deviceMap.has(device)) deviceMap.set(device, new Set());
+        deviceMap.get(device)!.add(view.fingerprint);
       });
 
       return Array.from(deviceMap.entries())
-        .map(([device_type, count]) => ({ device_type, count }))
+        .map(([device_type, fps]) => ({ device_type, count: fps.size }))
         .sort((a, b) => b.count - a.count);
     } catch (error) {
       console.error('❌ Erro ao obter views por dispositivo:', error);
@@ -437,7 +439,7 @@ export class StoryViewTrackingService {
     try {
       const { data, error } = await supabase
         .from('story_views')
-        .select('city, country, latitude, longitude, session_count')
+        .select('city, country, latitude, longitude, fingerprint')
         .eq('story_id', storyId)
         .not('city', 'is', null);
 
@@ -446,25 +448,28 @@ export class StoryViewTrackingService {
         return [];
       }
 
-      const cityMap = new Map<string, ViewsByCity>();
+      // Contar visitantes únicos por cidade
+      const cityMap = new Map<string, { city: string; country: string; fingerprints: Set<string>; latitude: number | null; longitude: number | null }>();
       data.forEach((view: any) => {
         const key = `${view.city}_${view.country}`;
-        const sessions = view.session_count ?? 1;
         if (cityMap.has(key)) {
-          const existing = cityMap.get(key)!;
-          existing.count += sessions;
+          cityMap.get(key)!.fingerprints.add(view.fingerprint);
         } else {
+          const fps = new Set<string>();
+          fps.add(view.fingerprint);
           cityMap.set(key, {
             city: view.city,
             country: view.country,
-            count: sessions,
+            fingerprints: fps,
             latitude: view.latitude,
             longitude: view.longitude,
           });
         }
       });
 
-      return Array.from(cityMap.values()).sort((a, b) => b.count - a.count);
+      return Array.from(cityMap.values())
+        .map(v => ({ city: v.city, country: v.country, count: v.fingerprints.size, latitude: v.latitude, longitude: v.longitude }))
+        .sort((a, b) => b.count - a.count);
     } catch (error) {
       console.error('❌ Erro ao obter views por cidade:', error);
       return [];

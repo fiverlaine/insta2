@@ -16,16 +16,11 @@ import {
 import { supabase } from "@/lib/supabase";
 import styles from "./StoryScreen.module.css";
 
-// Função helper para normalizar URLs (evita duplicação de https://)
+// Helper para normalizar URLs
 const normalizeUrl = (url: string | null | undefined): string => {
   if (!url) return '';
-  // Remove espaços e quebras de linha
   url = url.trim();
-  // Se já começa com http:// ou https://, retorna como está
-  if (url.startsWith('http://') || url.startsWith('https://')) {
-    return url;
-  }
-  // Caso contrário, adiciona https://
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
   return `https://${url}`;
 };
 
@@ -34,20 +29,14 @@ const appendTrackingParams = (targetUrl: string) => {
   try {
     const urlObj = new URL(targetUrl);
     const currentParams = new URLSearchParams(window.location.search);
-    
-    // Lista de parâmetros para repassar
     const paramsToForward = [
       'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term',
       'fbclid', 'ttclid', 'gclid', 'src', 'sck', 'funnel_id', 'utmify'
     ];
-
     paramsToForward.forEach(param => {
       const value = currentParams.get(param);
-      if (value) {
-        urlObj.searchParams.set(param, value);
-      }
+      if (value) urlObj.searchParams.set(param, value);
     });
-
     return urlObj.toString();
   } catch (error) {
     console.error('Erro ao adicionar params de tracking:', error);
@@ -55,7 +44,7 @@ const appendTrackingParams = (targetUrl: string) => {
   }
 };
 
-// Componente para iframe simplificado (sem injeção de FBP)
+// Componente para iframe simplificado
 const IframeWithFbp = ({ src, ...props }: { src: string | null;[key: string]: any }) => {
   if (!src) return null;
   const url = normalizeUrl(src);
@@ -86,13 +75,12 @@ export default function StoryScreen() {
   const backdropRef = useRef<HTMLDivElement>(null);
   const isDraggingRef = useRef(false);
 
-  // ── Tracking refs ──
+  // ── Tracking state ──
   const viewSessionRef = useRef<StoryViewSessionContext | null>(null);
   const viewStartTimeRef = useRef<number>(0);
   const playbackEventsRef = useRef<StoryPlaybackEvent[]>([]);
-  const trackingInitializedRef = useRef<string | null>(null); // storyId que já foi inicializado
+  const committedStoryIdRef = useRef<string | null>(null); // Guard: prevent double-commit
 
-  // Hook de like - sempre chamado, mas só funciona quando há story válido
   const { isLiked, toggleLike: toggleLikeFromHook } = useStoryLike(currentStory?.id || '');
 
   const performanceNow = useCallback(() => {
@@ -108,10 +96,16 @@ export default function StoryScreen() {
     }
   };
 
-  // ── Funções de tracking ──
+  // ── Commit da sessão de tracking (com guard anti-duplicação) ──
   const commitCurrentSession = useCallback(async (exitReason: StoryViewExitReason) => {
     const session = viewSessionRef.current;
     if (!session) return;
+
+    // Guard: se já commitou esta sessão, não faz de novo
+    if (committedStoryIdRef.current === session.storyId) {
+      return;
+    }
+    committedStoryIdRef.current = session.storyId;
 
     const story = storiesData.find(s => s.id === session.storyId);
     if (!story) return;
@@ -141,14 +135,11 @@ export default function StoryScreen() {
   useEffect(() => {
     if (!currentStory) return;
 
-    // Evitar dupla inicialização para o mesmo story
-    if (trackingInitializedRef.current === currentStory.id) return;
-    trackingInitializedRef.current = currentStory.id;
+    // Se o viewSession atual já é para este story, não reinicializa
+    if (viewSessionRef.current?.storyId === currentStory.id) return;
 
-    // Commitar sessão anterior antes de iniciar nova
-    if (viewSessionRef.current && viewSessionRef.current.storyId !== currentStory.id) {
-      commitCurrentSession('story_switch');
-    }
+    // Limpar guard de commit para o novo story
+    committedStoryIdRef.current = null;
 
     // Iniciar nova sessão
     viewStartTimeRef.current = performanceNow();
@@ -158,37 +149,37 @@ export default function StoryScreen() {
       .then(session => {
         if (session) {
           viewSessionRef.current = session;
-          console.log(`👁️ Tracking iniciado para story ${currentStory.id}`);
+          console.log(`👁️ Tracking iniciado: story ${currentStory.id.slice(0, 8)}... ${session.existingView ? '(revisita)' : '(nova view)'}`);
         }
       })
       .catch(err => console.error('Erro ao iniciar tracking:', err));
-  }, [currentStory?.id, performanceNow, commitCurrentSession]);
+  }, [currentStory?.id, performanceNow]);
 
-  // ── Commit ao sair da página ou fechar ──
+  // ── Commit ao sair da página ──
   useEffect(() => {
     const handleBeforeUnload = () => {
-      if (viewSessionRef.current) {
-        // Usar sendBeacon via commitCurrentSession de forma sync-safe
-        const session = viewSessionRef.current;
-        const story = storiesData.find(s => s.id === session.storyId);
-        if (!story) return;
-        const watchTimeMs = performanceNow() - viewStartTimeRef.current;
-        const durationMs = story.duration || 5000;
-        const viewedPercentage = Math.min(1, watchTimeMs / durationMs);
+      const session = viewSessionRef.current;
+      if (!session || committedStoryIdRef.current === session.storyId) return;
+      committedStoryIdRef.current = session.storyId;
 
-        // Fire-and-forget: usar supabase diretamente para garantir que o request sai
-        StoryViewTrackingService.commitViewSession(session, {
-          watchTimeMs,
-          viewedPercentage,
-          completed: viewedPercentage >= 0.95,
-          exitReason: 'screen_unload',
-          startedAt: new Date(Date.now() - watchTimeMs).toISOString(),
-          endedAt: new Date().toISOString(),
-          playbackEvents: playbackEventsRef.current,
-          mediaType: story.media_type,
-          durationMs,
-        }).catch(() => {});
-      }
+      const story = storiesData.find(s => s.id === session.storyId);
+      if (!story) return;
+
+      const watchTimeMs = performanceNow() - viewStartTimeRef.current;
+      const durationMs = story.duration || 5000;
+      const viewedPercentage = Math.min(1, watchTimeMs / durationMs);
+
+      StoryViewTrackingService.commitViewSession(session, {
+        watchTimeMs,
+        viewedPercentage,
+        completed: viewedPercentage >= 0.95,
+        exitReason: 'screen_unload',
+        startedAt: new Date(Date.now() - watchTimeMs).toISOString(),
+        endedAt: new Date().toISOString(),
+        playbackEvents: playbackEventsRef.current,
+        mediaType: story.media_type,
+        durationMs,
+      }).catch(() => {});
     };
 
     window.addEventListener('beforeunload', handleBeforeUnload);
@@ -198,14 +189,15 @@ export default function StoryScreen() {
   // ── Cleanup ao desmontar componente ──
   useEffect(() => {
     return () => {
-      if (viewSessionRef.current) {
+      const session = viewSessionRef.current;
+      if (session && committedStoryIdRef.current !== session.storyId) {
         commitCurrentSession('close_button');
       }
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Carregar stories e perfil do Supabase
+  // Carregar stories e perfil
   useEffect(() => {
     StoryService.clearAllStoriesCache();
     loadProfileAndStories();
@@ -217,36 +209,24 @@ export default function StoryScreen() {
       const profileData = await ProfileService.getProfile(undefined, { forceRefresh: true });
 
       if (profileData) {
-        console.log('✅ Perfil carregado:', { username: profileData.username, name: profileData.name });
         setProfile(profileData);
-
-        console.log(`🔍 Buscando stories para username: "${profileData.username}"`);
         const stories = await StoryService.getActiveStories(profileData.username);
-        console.log(`📊 Stories encontrados: ${stories.length}`, stories.map(s => ({ id: s.id, order: s.order_index, active: s.is_active })));
-
         setStoriesData(stories);
 
         if (storyIdFromUrl && stories.length > 0) {
           const storyIndex = stories.findIndex(s => s.id === storyIdFromUrl);
-          if (storyIndex !== -1) {
-            setCurrentIndex(storyIndex);
-            console.log(`✅ Abrindo story específico no índice ${storyIndex}`);
-          }
+          if (storyIndex !== -1) setCurrentIndex(storyIndex);
         }
       } else {
-        console.error('❌ Perfil não encontrado - tentando buscar sem filtro de is_active');
         try {
           const { data: fallbackProfile } = await supabase
             .from('profile_settings')
             .select('*')
             .limit(1)
             .single();
-
           if (fallbackProfile) {
-            console.log('✅ Perfil encontrado (fallback):', { username: fallbackProfile.username });
             setProfile(fallbackProfile);
             const stories = await StoryService.getActiveStories(fallbackProfile.username);
-            console.log(`📊 Stories encontrados (fallback): ${stories.length}`);
             setStoriesData(stories);
           }
         } catch (fallbackError) {
@@ -261,38 +241,30 @@ export default function StoryScreen() {
   };
 
   const handleNext = useCallback((_reason?: string) => {
-    // Reset tracking para permitir inicialização do próximo story
-    trackingInitializedRef.current = null;
+    // Registrar evento
+    playbackEventsRef.current.push({
+      type: _reason === 'auto_advance' ? 'complete' : 'exit',
+      timestamp: new Date().toISOString(),
+      progress: progressAnims.current[currentIndex] ?? undefined,
+      payload: { reason: _reason },
+    });
+
+    // Commitar sessão atual (guard previne double-commit)
+    const exitReason: StoryViewExitReason = _reason === 'auto_advance' ? 'auto_advance' : 'manual_next';
+    commitCurrentSession(exitReason);
 
     if (currentIndex < storiesData.length - 1) {
       if (progressAnims.current[currentIndex] !== null) {
         progressAnims.current[currentIndex] = 1;
         updateProgressBar(currentIndex, 1);
       }
-
-      // Registrar evento de avanço
-      playbackEventsRef.current.push({
-        type: _reason === 'auto_advance' ? 'complete' : 'exit',
-        timestamp: new Date().toISOString(),
-        progress: progressAnims.current[currentIndex] ?? undefined,
-        payload: { reason: _reason },
-      });
-
-      // Commitar sessão atual
-      const exitReason: StoryViewExitReason = _reason === 'auto_advance' ? 'auto_advance' : 'manual_next';
-      commitCurrentSession(exitReason);
-
       setCurrentIndex(currentIndex + 1);
     } else {
-      // Último story — commitar e sair
-      commitCurrentSession(_reason === 'auto_advance' ? 'auto_advance' : 'manual_next');
       navigate(-1);
     }
   }, [currentIndex, navigate, storiesData.length, commitCurrentSession]);
 
   const handlePrevious = useCallback(() => {
-    trackingInitializedRef.current = null;
-
     if (currentIndex > 0) {
       commitCurrentSession('manual_previous');
 
@@ -310,34 +282,33 @@ export default function StoryScreen() {
 
   const updateProgressBar = (index: number, progress: number) => {
     const bar = progressRefs.current[index];
-    if (bar) {
-      bar.style.width = `${progress * 100}%`;
-    }
+    if (bar) bar.style.width = `${progress * 100}%`;
   };
 
   useEffect(() => {
     if (storiesData.length > 0) {
       storiesData.forEach((_, index) => {
-        progressAnims.current[index] = index < currentIndex ? 1 : index === currentIndex ? 0 : 0;
+        progressAnims.current[index] = index < currentIndex ? 1 : 0;
       });
     }
   }, [storiesData, currentIndex]);
 
-  // Prefetch da próxima story (otimização de performance)
+  // Prefetch da próxima story
   useEffect(() => {
     if (currentIndex < storiesData.length - 1) {
       const nextStory = storiesData[currentIndex + 1];
-      if (nextStory && nextStory.media_type === 'image') {
+      if (nextStory?.media_type === 'image') {
         const img = new Image();
         img.src = nextStory.media_url;
       }
     }
   }, [currentIndex, storiesData]);
 
+  // Animation loop da progress bar
   useEffect(() => {
     if (!currentStory || isPaused) {
       if (intervalRef.current) {
-        clearInterval(intervalRef.current);
+        cancelAnimationFrame(intervalRef.current);
         intervalRef.current = null;
       }
       return;
@@ -372,13 +343,8 @@ export default function StoryScreen() {
     };
   }, [currentIndex, currentStory, handleNext, isPaused, performanceNow]);
 
-  const handleTapLeft = () => {
-    handlePrevious();
-  };
-
-  const handleTapRight = () => {
-    handleNext('manual_next');
-  };
+  const handleTapLeft = () => handlePrevious();
+  const handleTapRight = () => handleNext('manual_next');
 
   const handleMouseDown = () => {
     setIsPaused(true);
@@ -390,39 +356,31 @@ export default function StoryScreen() {
     playbackEventsRef.current.push({ type: 'resume', timestamp: new Date().toISOString() });
   };
 
-  const handleFollow = async () => {
-    await toggleFollow();
-  };
+  const handleFollow = async () => { await toggleFollow(); };
 
   const handleToggleMute = () => {
     setIsMuted((prev) => {
       const nextMuted = !prev;
-      if (videoRef.current) {
-        videoRef.current.muted = nextMuted;
-      }
+      if (videoRef.current) videoRef.current.muted = nextMuted;
       playbackEventsRef.current.push({ type: 'mute_toggle', timestamp: new Date().toISOString(), payload: { muted: nextMuted } });
       return nextMuted;
     });
   };
 
   const handleVideoPlay = () => {};
-
   const handleVideoPause = () => {};
 
   const handleLinkClick = async (e: React.MouseEvent | React.TouchEvent) => {
     e.stopPropagation();
-
     if (!currentStory) return;
 
     const targetLink = currentStory.link_url || profile?.link;
     if (!targetLink) return;
 
     let normalizedLink = normalizeUrl(targetLink);
-
-    // Blindagem de Link: Adicionar parâmetros de rastreamento (UTMs)
     normalizedLink = appendTrackingParams(normalizedLink);
 
-    // Registrar evento de link click no tracking
+    // Registrar evento de link click
     playbackEventsRef.current.push({ type: 'link', timestamp: new Date().toISOString(), payload: { url: normalizedLink } });
     commitCurrentSession('link_click');
 
@@ -430,7 +388,6 @@ export default function StoryScreen() {
     window.open(normalizedLink, '_blank');
   };
 
-  // Atualizar muted quando trocar de story
   useEffect(() => {
     if (videoRef.current && currentStory?.media_type === 'video') {
       videoRef.current.muted = isMuted;
@@ -443,7 +400,6 @@ export default function StoryScreen() {
     try {
       setSending(true);
 
-      // Para vídeos, gerar thumbnail se não existir
       let storyThumbnail = currentStory.thumbnail || undefined;
       if (currentStory.media_type === 'video' && !storyThumbnail) {
         const generated = await MediaService.createVideoThumbnailFromUrl(currentStory.media_url);
@@ -460,19 +416,14 @@ export default function StoryScreen() {
 
       await ChatService.sendMessage(
         storyMessage,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
+        undefined, undefined, undefined, undefined,
         currentStory.media_url,
         currentStory.media_type,
         currentStory.id,
         storyThumbnail
       );
 
-      // Registrar evento de reply no tracking
       playbackEventsRef.current.push({ type: 'reply', timestamp: new Date().toISOString() });
-
       setStoryMessage("");
       navigate('/chat');
     } catch (error) {
@@ -490,7 +441,6 @@ export default function StoryScreen() {
   };
 
   const handleClose = useCallback(async () => {
-    trackingInitializedRef.current = null;
     await commitCurrentSession('close_button');
     navigate(-1);
   }, [navigate, commitCurrentSession]);
@@ -501,17 +451,14 @@ export default function StoryScreen() {
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartY.current = e.touches[0].clientY;
     isDraggingRef.current = true;
-
     if (contentRef.current) contentRef.current.style.transition = 'none';
     if (backdropRef.current) backdropRef.current.style.transition = 'none';
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
     if (!isDraggingRef.current || !touchStartY.current) return;
-
     const currentY = e.touches[0].clientY;
     const deltaY = currentY - touchStartY.current;
-
     if (deltaY < 0) return;
 
     if (contentRef.current && backdropRef.current) {
@@ -538,10 +485,7 @@ export default function StoryScreen() {
         contentRef.current.style.transform = `translateY(100vh) scale(0.5)`;
         backdropRef.current.style.transition = 'opacity 0.3s ease-out';
         backdropRef.current.style.opacity = '0';
-
-        setTimeout(() => {
-          handleClose();
-        }, 300);
+        setTimeout(() => handleClose(), 300);
       } else {
         handleClose();
       }
@@ -557,7 +501,8 @@ export default function StoryScreen() {
     touchStartY.current = null;
   };
 
-  // Loading state
+  // ── Render ──
+
   if (loading) {
     return (
       <div className={styles.container} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -566,22 +511,11 @@ export default function StoryScreen() {
     );
   }
 
-  // Sem stories
   if (storiesData.length === 0) {
     return (
       <div className={styles.container} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px' }}>
         <span style={{ color: '#fff', fontSize: '16px' }}>Nenhum story disponível</span>
-        <button
-          onClick={() => navigate(-1)}
-          style={{
-            padding: '10px 20px',
-            backgroundColor: '#363636',
-            color: '#fff',
-            border: 'none',
-            borderRadius: '8px',
-            cursor: 'pointer'
-          }}
-        >
+        <button onClick={() => navigate(-1)} style={{ padding: '10px 20px', backgroundColor: '#363636', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>
           Voltar
         </button>
       </div>
@@ -602,11 +536,7 @@ export default function StoryScreen() {
             ref={videoRef}
             src={currentStory.media_url}
             className={styles.backgroundImage}
-            autoPlay
-            muted={isMuted}
-            playsInline
-            loop={false}
-            preload="auto"
+            autoPlay muted={isMuted} playsInline loop={false} preload="auto"
             onPlay={handleVideoPlay}
             onPause={handleVideoPause}
           />
@@ -620,13 +550,9 @@ export default function StoryScreen() {
               <div key={index} className={styles.progressBarContainer}>
                 <div className={styles.progressBarBackground}>
                   <div
-                    ref={(el) => {
-                      progressRefs.current[index] = el;
-                    }}
+                    ref={(el) => { progressRefs.current[index] = el; }}
                     className={styles.progressBarFill}
-                    style={{
-                      width: index < currentIndex ? '100%' : index === currentIndex ? '0%' : '0%',
-                    }}
+                    style={{ width: index < currentIndex ? '100%' : '0%' }}
                   />
                 </div>
               </div>
@@ -636,11 +562,7 @@ export default function StoryScreen() {
           <div className={styles.header}>
             <div className={styles.userInfo}>
               <div className={styles.avatarContainer}>
-                <img
-                  src={profile?.avatar_url || '/assets/images/profile.jpg'}
-                  alt="Avatar"
-                  className={styles.avatar}
-                />
+                <img src={profile?.avatar_url || '/assets/images/profile.jpg'} alt="Avatar" className={styles.avatar} />
               </div>
               <span className={styles.username}>{profile?.username || 'Carregando...'}</span>
               <span className={styles.time}>14 h</span>
@@ -648,16 +570,8 @@ export default function StoryScreen() {
 
             <div className={styles.headerActions}>
               {currentStory.media_type === 'video' && (
-                <button
-                  className={styles.muteButton}
-                  onClick={handleToggleMute}
-                  title={isMuted ? "Ativar som" : "Desativar som"}
-                >
-                  {isMuted ? (
-                    <VolumeX color="#fff" size={24} />
-                  ) : (
-                    <Volume2 color="#fff" size={24} />
-                  )}
+                <button className={styles.muteButton} onClick={handleToggleMute} title={isMuted ? "Ativar som" : "Desativar som"}>
+                  {isMuted ? <VolumeX color="#fff" size={24} /> : <Volume2 color="#fff" size={24} />}
                 </button>
               )}
               {!isFollowing && (
@@ -672,10 +586,7 @@ export default function StoryScreen() {
           </div>
 
           <div className={styles.tapAreas}>
-            <button
-              className={styles.tapLeft}
-              onClick={handleTapLeft}
-            />
+            <button className={styles.tapLeft} onClick={handleTapLeft} />
             <div
               className={styles.tapCenter}
               onMouseDown={handleMouseDown}
@@ -684,13 +595,10 @@ export default function StoryScreen() {
               onTouchStart={handleMouseDown}
               onTouchEnd={handleMouseUp}
             />
-            <button
-              className={styles.tapRight}
-              onClick={handleTapRight}
-            />
+            <button className={styles.tapRight} onClick={handleTapRight} />
           </div>
 
-          {/* Botão de link visual igual ao Instagram */}
+          {/* Link visível */}
           {currentStory && (currentStory.link_type === 'visible' || (!currentStory.link_type && currentStory.show_link)) && (currentStory.link_url || profile?.link) && (
             <button
               className={styles.storyLinkButton}
@@ -698,11 +606,7 @@ export default function StoryScreen() {
               title="Abrir link"
               style={
                 currentStory.link_type === 'visible' && currentStory.link_x !== undefined && currentStory.link_y !== undefined
-                  ? {
-                    left: `${currentStory.link_x}%`,
-                    top: `${currentStory.link_y}%`,
-                    transform: 'translate(-50%, -50%)',
-                  }
+                  ? { left: `${currentStory.link_x}%`, top: `${currentStory.link_y}%`, transform: 'translate(-50%, -50%)' }
                   : undefined
               }
             >
@@ -711,32 +615,27 @@ export default function StoryScreen() {
             </button>
           )}
 
-          {/* Link Invisível - Área clicável posicionada */}
+          {/* Link invisível */}
           {currentStory && currentStory.link_type === 'invisible' && (currentStory.link_url || profile?.link) && (
             <div
               style={{
                 position: 'absolute',
                 left: `${currentStory.link_x ?? 50}%`,
                 top: `${currentStory.link_y ?? 50}%`,
-                width: '120px',
-                height: '60px',
+                width: '120px', height: '60px',
                 transform: 'translate(-50%, -50%)',
-                zIndex: 20,
-                cursor: 'pointer',
+                zIndex: 20, cursor: 'pointer',
               }}
               onClick={handleLinkClick}
               onTouchEnd={handleLinkClick}
             />
           )}
 
-          {/* Modal de iframe fullscreen */}
+          {/* Modal iframe */}
           {showIframe && (currentStory?.link_url || profile?.link) && (
             <div className={styles.iframeModal}>
               <div className={styles.iframeHeader}>
-                <button
-                  className={styles.iframeCloseButton}
-                  onClick={() => setShowIframe(false)}
-                >
+                <button className={styles.iframeCloseButton} onClick={() => setShowIframe(false)}>
                   <ChevronLeft color="#fff" size={28} />
                 </button>
                 <span className={styles.iframeUrl}>{currentStory?.link_url || profile?.link}</span>
@@ -763,15 +662,8 @@ export default function StoryScreen() {
                 disabled={sending}
               />
             </div>
-            <button
-              className={styles.footerButton}
-              onClick={() => toggleLike()}
-            >
-              <Heart
-                color={isLiked ? "#ff3040" : "#fff"}
-                fill={isLiked ? "#ff3040" : "transparent"}
-                size={28}
-              />
+            <button className={styles.footerButton} onClick={() => toggleLike()}>
+              <Heart color={isLiked ? "#ff3040" : "#fff"} fill={isLiked ? "#ff3040" : "transparent"} size={28} />
             </button>
             <button
               className={styles.footerButton}

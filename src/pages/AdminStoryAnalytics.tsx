@@ -154,12 +154,12 @@ export default function AdminStoryAnalytics() {
                 <div className={styles.statsGrid}>
                   <div className={styles.statCard}>
                     <Eye size={20} className={styles.icon} />
-                    <span className={styles.label}>Views Totais</span>
-                    <span className={styles.value}>{formatNumber(stats?.total_views)}</span>
+                    <span className={styles.label}>Visualizações</span>
+                    <span className={styles.value}>{formatNumber(stats?.unique_views)}</span>
                   </div>
                   <div className={styles.statCard}>
                     <Users size={20} className={styles.icon} />
-                    <span className={styles.label}>Leads Únicos</span>
+                    <span className={styles.label}>Visitantes Únicos</span>
                     <span className={styles.value}>{formatNumber(stats?.unique_visitors)}</span>
                   </div>
                   <div className={styles.statCard}>
@@ -171,6 +171,16 @@ export default function AdminStoryAnalytics() {
                     <Activity size={20} className={styles.icon} />
                     <span className={styles.label}>Taxa de Conclusão</span>
                     <span className={styles.value}>{formatPercentageValue(stats?.completion_rate_percentage)}</span>
+                  </div>
+                  <div className={styles.statCard}>
+                    <TrendingUp size={20} className={styles.icon} />
+                    <span className={styles.label}>Views 24h</span>
+                    <span className={styles.value}>{formatNumber(stats?.views_last_24h)}</span>
+                  </div>
+                  <div className={styles.statCard}>
+                    <Clock size={20} className={styles.icon} />
+                    <span className={styles.label}>Tempo Médio</span>
+                    <span className={styles.value}>{formatWatchTime(stats?.avg_watch_time_ms)}</span>
                   </div>
                 </div>
 
