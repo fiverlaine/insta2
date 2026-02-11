@@ -42,7 +42,7 @@ export const BetService = {
   async getDeposits() {
     const { data, error } = await supabase
       .from('deposits')
-      .select('*, leads:bet_leads(*)')
+      .select('*, bet_leads(*)')
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -51,5 +51,6 @@ export const BetService = {
     }
     return data;
   }
+
 
 };

@@ -42,18 +42,24 @@ export default function BetLeads() {
     ...deposits.map(d => ({
       id: d.id,
       type: 'deposit',
-      email: d.leads?.email || 'N/A',
-      phone: d.leads?.phone || '',
-      name: d.leads?.name || 'Cliente',
+      email: d.bet_leads?.email || 'N/A',
+      phone: d.bet_leads?.phone || '',
+      name: d.bet_leads?.name || 'Cliente',
       status: d.status, // 'paid' ou 'waiting_payment'
       amount: d.amount,
       utm_source: d.utm_source,
       utm_campaign: d.utm_campaign,
-      utmify: d.utmify || d.leads?.utmify || 'N/A',
+      utmify: d.utmify || d.bet_leads?.utmify || 'N/A',
+
       created_at: d.created_at,
       txid: d.txid
     })),
-    ...leads.filter(l => !deposits.some(d => d.visitor_id === l.visitor_id || d.fingerprint === l.fingerprint)).map(l => ({
+    ...leads.filter(l => !deposits.some(d => 
+      (l.visitor_id && d.visitor_id === l.visitor_id) || 
+      (l.fingerprint && d.fingerprint === l.fingerprint) ||
+      (l.email && d.bet_leads?.email === l.email)
+    )).map(l => ({
+
       id: l.id,
       type: 'signup',
       email: l.email,

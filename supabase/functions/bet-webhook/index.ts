@@ -54,7 +54,10 @@ serve(async (req) => {
         updated_at: new Date().toISOString(),
       }, { onConflict: 'email' });
 
-      if (error) throw error;
+      if (error) {
+        console.error("[Webhook] Signup Error:", error);
+        throw error;
+      }
     } 
     
     // 2. Process PIX Generation or Payment
@@ -73,8 +76,10 @@ serve(async (req) => {
         if (lead) lead_id = lead.id;
       }
 
-      // Limpar txid (remover espaços e limitar tamanho para evitar erros no banco ou utmify)
-      let cleanTxid = (data.txid || `tx_${Date.now()}`).toString().replace(/\s+/g, '').substring(0, 100);
+      // Limpar txid (remover espaços e pegar apenas a parte relevante)
+      // O txid original pode vir com texto extra como no print: "8aafd... PIX"
+      let rawTxid = (data.txid || `tx_${Date.now()}`).toString();
+      let cleanTxid = rawTxid.split(/\s+/)[0].substring(0, 80);
 
       // Update deposits table
       const { error: depositError } = await supabaseClient.from("deposits").upsert({
@@ -93,10 +98,12 @@ serve(async (req) => {
         visitor_id: data.visitor_id,
         fingerprint: data.fingerprint,
         ip_address: data.ip || data.ip_address,
-        created_at: data.created_at || new Date().toISOString(),
+        created_at: new Date().toISOString(),
       }, { onConflict: 'txid' });
       
-      if (depositError) console.error("[Webhook] Deposit Error:", depositError);
+      if (depositError) {
+        console.error("[Webhook] Deposit Error:", depositError);
+      }
 
       // 3. Send to Utmify
       try {
@@ -119,13 +126,16 @@ serve(async (req) => {
 });
 
 function formatUtmifyDate(date: Date) {
-  return date.toISOString().replace('T', ' ').split('.')[0];
+  // Format: YYYY-MM-DD HH:mm:ss
+  const iso = date.toISOString();
+  return iso.replace('T', ' ').split('.')[0];
 }
 
 async function sendToUtmify(data: any, orderId: string, status: string) {
   const now = new Date();
   const approvedDate = status === "paid" ? formatUtmifyDate(now) : null;
   const createdAt = formatUtmifyDate(now);
+  const priceInCents = Math.round(parseFloat(data.amount || "0") * 100);
 
   const payload = {
     orderId: orderId,
@@ -138,14 +148,14 @@ async function sendToUtmify(data: any, orderId: string, status: string) {
       name: data.name || "Cliente",
       email: data.email || "email@email.com",
       phone: data.phone || "",
-      document: (data.cpf || data.document || "").replace(/\D/g, ''), // Limpar máscara do CPF
+      document: (data.cpf || data.document || "").replace(/\D/g, ''),
       ip: data.ip || "",
     },
     products: [
       {
         id: "deposit",
         name: "Depósito",
-        priceInCents: Math.round(parseFloat(data.amount || "0") * 100),
+        priceInCents: priceInCents,
         quantity: 1
       },
     ],
@@ -157,10 +167,15 @@ async function sendToUtmify(data: any, orderId: string, status: string) {
       utm_medium: data.utm_medium,
       utm_content: data.utm_content,
       utm_term: data.utm_term,
+    },
+    commission: {
+      totalPriceInCents: priceInCents,
+      gatewayFeeInCents: 0,
+      userCommissionInCents: priceInCents
     }
   };
 
-  console.log(`[Utmify] Sending ${status} order ${orderId}`);
+  console.log(`[Utmify] Sending ${status} order ${orderId} to UTMify...`);
 
   const response = await fetch("https://api.utmify.com.br/api-credentials/orders", {
     method: "POST",
@@ -175,7 +190,6 @@ async function sendToUtmify(data: any, orderId: string, status: string) {
     const errBody = await response.text();
     console.error(`[Utmify] Error ${response.status}:`, errBody);
   } else {
-    console.log(`[Utmify] Success`);
+    console.log(`[Utmify] Success sending to UTMify`);
   }
 }
-
