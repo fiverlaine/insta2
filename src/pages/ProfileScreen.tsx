@@ -156,7 +156,7 @@ export default function ProfileScreen() {
           <div className={styles.profileHeader}>
             <button
               className={styles.avatarContainer}
-              onClick={() => !showSkeleton && navigate('/story', { state: { background: location } })}
+              onClick={() => !showSkeleton && navigate('/story', { state: { background: location, profile: profile } })}
               style={{ opacity: showSkeleton ? 0.5 : 1 }}
             >
               <div className={styles.avatarGradient}>

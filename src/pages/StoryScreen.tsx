@@ -1,4 +1,4 @@
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { X, Heart, Send, Volume2, VolumeX, Link2, ChevronLeft } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useFollow } from "@/hooks/useFollow";
@@ -53,6 +53,7 @@ const IframeWithFbp = ({ src, ...props }: { src: string | null;[key: string]: an
 
 export default function StoryScreen() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const storyIdFromUrl = searchParams.get('id');
   const [storiesData, setStoriesData] = useState<Story[]>([]);
@@ -248,18 +249,26 @@ export default function StoryScreen() {
 
   // Carregar stories e perfil
   useEffect(() => {
-    StoryService.clearAllStoriesCache();
+    // REMOVIDO: StoryService.clearAllStoriesCache(); -> Isso matava o preloading!
     loadProfileAndStories();
   }, []);
 
   const loadProfileAndStories = async () => {
     try {
       setLoading(true);
-      const profileData = await ProfileService.getProfile(undefined, { forceRefresh: true });
 
-      if (profileData) {
-        setProfile(profileData);
-        const stories = await StoryService.getActiveStories(profileData.username);
+      // Tentar pegar perfil do state da navegação primeiro (instantâneo)
+      const stateProfile = location.state?.profile as ProfileSettings | undefined;
+      let currentProfile: ProfileSettings | null | undefined = stateProfile;
+
+      if (!currentProfile) {
+        currentProfile = await ProfileService.getProfile(undefined, { forceRefresh: false }); // forceRefresh: false para usar cache se possível
+      }
+
+      if (currentProfile) {
+        setProfile(currentProfile);
+        // Busca stories (que já devem estar preloaded no cache pelo ProfileScreen)
+        const stories = await StoryService.getActiveStories(currentProfile.username);
         setStoriesData(stories);
 
         if (storyIdFromUrl && stories.length > 0) {
@@ -347,7 +356,7 @@ export default function StoryScreen() {
     }
   }, [storiesData, currentIndex]);
 
-  // Prefetch da próxima story
+  // Prefetch do próximo story (Imagem E VÍDEO agora)
   useEffect(() => {
     if (currentIndex < storiesData.length - 1) {
       const nextStory = storiesData[currentIndex + 1];
@@ -355,6 +364,7 @@ export default function StoryScreen() {
         const img = new Image();
         img.src = nextStory.media_url;
       }
+      // Para vídeo, o prefetch é feito via elemento renderizado oculto (veja abaixo no return)
     }
   }, [currentIndex, storiesData]);
 
@@ -730,6 +740,22 @@ export default function StoryScreen() {
           </div>
         </div>
       </div>
+
+      {/* 
+        PRELOADER DE VÍDEO INVISÍVEL 
+        Renderiza o PRÓXIMO vídeo da lista com preload="auto" e muted.
+        Isso força o navegador a baixar o buffer antecipadamente.
+      */}
+      {currentIndex < storiesData.length - 1 && 
+       storiesData[currentIndex + 1].media_type === 'video' && (
+        <video
+          key={`preload-${storiesData[currentIndex + 1].id}`}
+          src={storiesData[currentIndex + 1].media_url}
+          preload="auto"
+          muted
+          style={{ position: 'absolute', width: 0, height: 0, opacity: 0, pointerEvents: 'none' }}
+        />
+      )}
     </div>
   );
 }
