@@ -48,6 +48,7 @@ interface UnifiedItem {
   status: string;
   amount: number;
   utm_campaign: string | null;
+  utm_medium: string | null;
   utm_content: string | null;
   utm_term: string | null;
   utm_source: string | null;
@@ -151,6 +152,7 @@ export default function BetLeads() {
         status: d.status,
         amount: d.amount,
         utm_campaign: d.utm_campaign || d.bet_leads?.utm_campaign,
+        utm_medium: d.utm_medium || d.bet_leads?.utm_medium,
         utm_content: d.utm_content || d.bet_leads?.utm_content,
         utm_term: d.utm_term || d.bet_leads?.utm_term,
         utm_source: d.utm_source || d.bet_leads?.utm_source,
@@ -177,6 +179,7 @@ export default function BetLeads() {
           status: "signup",
           amount: 0,
           utm_campaign: l.utm_campaign,
+          utm_medium: l.utm_medium,
           utm_content: l.utm_content,
           utm_term: l.utm_term,
           utm_source: l.utm_source,
@@ -199,6 +202,7 @@ export default function BetLeads() {
 
       // Search filter
       const campaignClean = cleanUtmName(item.utm_campaign).toLowerCase();
+      const adSetClean = cleanUtmName(item.utm_medium).toLowerCase();
       const contentClean = cleanUtmName(item.utm_content).toLowerCase();
       const search = searchTerm.toLowerCase();
       const matchesSearch =
@@ -206,6 +210,7 @@ export default function BetLeads() {
         item.name?.toLowerCase().includes(search) ||
         item.utmify?.toLowerCase().includes(search) ||
         campaignClean.includes(search) ||
+        adSetClean.includes(search) ||
         contentClean.includes(search);
 
       // Status filter
@@ -264,17 +269,28 @@ export default function BetLeads() {
     return Object.values(map);
   }
 
+  // Por Campanha (utm_campaign) = Nome da campanha no Facebook
   const aggByCampaign = useMemo(
     () =>
-      buildAgg((i) => cleanUtmName(i.utm_content))
+      buildAgg((i) => cleanUtmName(i.utm_campaign))
         .sort((a, b) => b.revenue - a.revenue || b.pixPaid - a.pixPaid || b.signups - a.signups)
         .slice(0, 8),
     [dateFilteredUnified]
   );
 
+  // Por Conjunto de Anúncios (utm_medium) = Nome do ad set no Facebook
   const aggByAdSet = useMemo(
     () =>
-      buildAgg((i) => cleanUtmName(i.utm_campaign))
+      buildAgg((i) => cleanUtmName(i.utm_medium))
+        .sort((a, b) => b.revenue - a.revenue || b.pixPaid - a.pixPaid || b.signups - a.signups)
+        .slice(0, 8),
+    [dateFilteredUnified]
+  );
+
+  // Por Anúncio (utm_content) = Nome do anúncio no Facebook
+  const aggByAd = useMemo(
+    () =>
+      buildAgg((i) => cleanUtmName(i.utm_content))
         .sort((a, b) => b.revenue - a.revenue || b.pixPaid - a.pixPaid || b.signups - a.signups)
         .slice(0, 8),
     [dateFilteredUnified]
@@ -283,14 +299,6 @@ export default function BetLeads() {
   const aggByPlacement = useMemo(
     () =>
       buildAgg((i) => formatPlacement(i.utm_term))
-        .sort((a, b) => b.revenue - a.revenue || b.pixPaid - a.pixPaid || b.signups - a.signups)
-        .slice(0, 8),
-    [dateFilteredUnified]
-  );
-
-  const aggBySource = useMemo(
-    () =>
-      buildAgg((i) => cleanUtmName(i.utm_source))
         .sort((a, b) => b.revenue - a.revenue || b.pixPaid - a.pixPaid || b.signups - a.signups)
         .slice(0, 8),
     [dateFilteredUnified]
@@ -463,25 +471,25 @@ export default function BetLeads() {
 
           {analyticsOpen && (
             <div className={styles.analyticsGrid}>
-              {/* By Ad (utm_content) */}
+              {/* By Campaign (utm_campaign) */}
               <AnalyticsRankingCard
-                title="🎯 Por Anúncio (utm_content)"
+                title="📢 Por Campanha"
                 data={aggByCampaign}
               />
-              {/* By Ad Set (utm_campaign) */}
+              {/* By Ad Set (utm_medium) */}
               <AnalyticsRankingCard
-                title="📦 Por Conjunto (utm_campaign)"
+                title="📦 Por Conjunto"
                 data={aggByAdSet}
+              />
+              {/* By Ad (utm_content) */}
+              <AnalyticsRankingCard
+                title="🎯 Por Anúncio"
+                data={aggByAd}
               />
               {/* By Placement (utm_term) */}
               <AnalyticsRankingCard
-                title="📍 Por Posição (utm_term)"
+                title="📍 Por Posição"
                 data={aggByPlacement}
-              />
-              {/* By Source (utm_source) */}
-              <AnalyticsRankingCard
-                title="🌐 Por Fonte (utm_source)"
-                data={aggBySource}
               />
             </div>
           )}
@@ -570,7 +578,7 @@ export default function BetLeads() {
                     </td>
                     <td>
                       <span className={styles.utmBadge}>
-                        {cleanUtmName(item.utm_campaign)}
+                        {cleanUtmName(item.utm_medium)}
                       </span>
                     </td>
                     <td>
