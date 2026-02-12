@@ -18,9 +18,10 @@
   font-size: 14px;
 }
 
+/* ── Stats Grid ── */
 .statsGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 16px;
   margin-bottom: 32px;
 }
@@ -30,10 +31,15 @@
   border: 1px solid rgba(255, 255, 255, 0.05);
   padding: 20px;
   border-radius: 12px;
+  transition: border-color 0.2s;
+}
+
+.statCard:hover {
+  border-color: rgba(255, 255, 255, 0.12);
 }
 
 .statLabel {
-  font-size: 12px;
+  font-size: 11px;
   color: rgba(255, 255, 255, 0.4);
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -47,6 +53,75 @@
   color: #fff;
 }
 
+.statDelta {
+  font-size: 11px;
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.statDeltaUp {
+  color: #10b981;
+}
+
+.statDeltaDown {
+  color: #ef4444;
+}
+
+/* ── Date Filter ── */
+.dateFilters {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.datePreset {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.6);
+  padding: 6px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.datePreset:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.datePreset.active {
+  background: #0095f6;
+  border-color: #0095f6;
+  color: #fff;
+}
+
+.dateInput {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  outline: none;
+  color-scheme: dark;
+}
+
+.dateInput:focus {
+  border-color: #0095f6;
+}
+
+.dateSeparator {
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 12px;
+}
+
+/* ── Filters Row ── */
 .filters {
   display: flex;
   gap: 12px;
@@ -69,6 +144,217 @@
   border-color: #0095f6;
 }
 
+/* ── Analytics Section ── */
+.analyticsSection {
+  margin-bottom: 32px;
+}
+
+.analyticsSectionTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.analyticsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 16px;
+}
+
+.analyticsCard {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 20px;
+  transition: border-color 0.2s;
+}
+
+.analyticsCard:hover {
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.analyticsCardTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.analyticsRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.analyticsRow:last-child {
+  border-bottom: none;
+}
+
+.analyticsRank {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.4);
+  flex-shrink: 0;
+}
+
+.analyticsRank.gold {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+}
+
+.analyticsRank.silver {
+  background: rgba(148, 163, 184, 0.15);
+  color: #94a3b8;
+}
+
+.analyticsRank.bronze {
+  background: rgba(180, 83, 9, 0.15);
+  color: #d97706;
+}
+
+.analyticsName {
+  flex: 1;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.8);
+  margin-left: 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.analyticsValues {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.analyticsPill {
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  min-width: 38px;
+  text-align: center;
+}
+
+.analyticsPillSignup {
+  background: rgba(59, 130, 246, 0.12);
+  color: #60a5fa;
+}
+
+.analyticsPillPix {
+  background: rgba(245, 158, 11, 0.12);
+  color: #fbbf24;
+}
+
+.analyticsPillPaid {
+  background: rgba(16, 185, 129, 0.12);
+  color: #34d399;
+}
+
+.analyticsPillRevenue {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+  font-weight: 700;
+}
+
+.analyticsBar {
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.04);
+  margin-top: 4px;
+  overflow: hidden;
+}
+
+.analyticsBarFill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
+
+.analyticsBarSignup { background: #3b82f6; }
+.analyticsBarPix { background: #f59e0b; }
+.analyticsBarPaid { background: #10b981; }
+
+.analyticsEmpty {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.25);
+  font-size: 13px;
+  padding: 24px 0;
+}
+
+/* ── Conversion Funnel ── */
+.funnelContainer {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 4px 0;
+}
+
+.funnelStep {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  position: relative;
+}
+
+.funnelBar {
+  width: 100%;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  transition: height 0.4s ease;
+  min-height: 48px;
+}
+
+.funnelLabel {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.funnelArrow {
+  color: rgba(255, 255, 255, 0.15);
+  font-size: 18px;
+  flex-shrink: 0;
+  margin: 0 -4px;
+}
+
+.funnelRate {
+  position: absolute;
+  top: -20px;
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+/* ── Table ── */
 .tableContainer {
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.05);
@@ -106,17 +392,17 @@
   text-transform: uppercase;
 }
 
-.status.paid {
+.paid {
   background: rgba(16, 185, 129, 0.1);
   color: #10b981;
 }
 
-.status.waiting_payment {
+.waiting_payment {
   background: rgba(245, 158, 11, 0.1);
   color: #f59e0b;
 }
 
-.status.signup {
+.signup {
   background: rgba(59, 130, 246, 0.1);
   color: #3b82f6;
 }
@@ -133,6 +419,24 @@
 .utmifyTag {
   color: #10b981;
   font-weight: 600;
+}
+
+/* ── Collapsible Toggle ── */
+.collapseToggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  user-select: none;
+}
+
+.collapseIcon {
+  transition: transform 0.2s;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.collapseIcon.open {
+  transform: rotate(180deg);
 }
 
 @keyframes fadeIn {
