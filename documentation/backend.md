@@ -7,17 +7,19 @@
 
 ## Esquema principal (`public`)
 
-| Tabela | Objetivo | Observacoes |
-| --- | --- | --- |
-| `profile_settings` | Metadados do perfil principal exibido no app | Apenas um registro ativo (`is_active = true`). Trigger `set_updated_at`. |
-| `posts` | Posts do feed (galeria) | Campo `images` (ARRAY de `TEXT`), ordenacao por `order_index`. |
-| `stories` | Stories exibidos aos visitantes | Suporta imagens e videos. Trigger `set_updated_at`. |
-| `profile_follows` | Estado de follow por visitante | Constrangimento unico (`visitor_id`, `profile_username`). |
-| `post_likes` / `story_likes` | Curtidas por visitante | Constrangimento unico com visitante. |
-| `conversations` | Conversas iniciadas via chat | Campo `visitor_id` unico. |
-| `messages` | Mensagens do chat visitante ↔ admin | Trigger `update_conversation_on_message` mantem `last_message_at` e `unread_count`. |
-| `comments` | Comentarios em posts com hierarquia | `parent_comment_id` suporta aninhamento. |
-| `story_views` | Rastreamento detalhado de visualizacoes de stories | `fingerprint` + `session_id` garantem unicidade por visitante/story; armazena metrica de sessao (`session_count`, `watch_time_ms`, `viewed_percentage`, `completed`) e fingerprinting completo. |
+| Tabela                       | Objetivo                                           | Observacoes                                                                                                                                                                                     |
+| ---------------------------- | -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `profile_settings`           | Metadados do perfil principal exibido no app       | Apenas um registro ativo (`is_active = true`). Trigger `set_updated_at`.                                                                                                                        |
+| `posts`                      | Posts do feed (galeria)                            | Campo `images` (ARRAY de `TEXT`), ordenacao por `order_index`.                                                                                                                                  |
+| `stories`                    | Stories exibidos aos visitantes                    | Suporta imagens e videos. Trigger `set_updated_at`.                                                                                                                                             |
+| `profile_follows`            | Estado de follow por visitante                     | Constrangimento unico (`visitor_id`, `profile_username`).                                                                                                                                       |
+| `post_likes` / `story_likes` | Curtidas por visitante                             | Constrangimento unico com visitante.                                                                                                                                                            |
+| `conversations`              | Conversas iniciadas via chat                       | Campo `visitor_id` unico.                                                                                                                                                                       |
+| `messages`                   | Mensagens do chat visitante ↔ admin                | Trigger `update_conversation_on_message` mantem `last_message_at` e `unread_count`.                                                                                                             |
+| `comments`                   | Comentarios em posts com hierarquia                | `parent_comment_id` suporta aninhamento.                                                                                                                                                        |
+| `highlights`                 | Grupos de destaques do perfil                      | Metadata (nome, capa, ordem).                                                                                                                                                                   |
+| `highlight_stories`          | Relacao entre destaque e story                     | Ordenacao customizada dentro do destaque.                                                                                                                                                       |
+| `story_views`                | Rastreamento detalhado de visualizacoes de stories | `fingerprint` + `session_id` garantem unicidade por visitante/story; armazena metrica de sessao (`session_count`, `watch_time_ms`, `viewed_percentage`, `completed`) e fingerprinting completo. |
 
 ### Views
 
@@ -28,12 +30,12 @@ Ambas tem `GRANT SELECT` para `anon` e `authenticated`.
 
 ## Buckets de Storage
 
-| Bucket | Uso | Observacoes |
-| --- | --- | --- |
-| `profile-media` | Fotos de perfil, posts e arquivos JSON estaticos | Policies permitem leitura/escrita publica (aplicacao roda com chave anon). |
-| `stories-media` | Midia dos stories | Idem. |
-| `chat-media` | Anexos enviados no chat | Idem. |
-| `avatars` | Avatares enviados manualmente no gerenciador de comentarios | Idem. |
+| Bucket          | Uso                                                         | Observacoes                                                                |
+| --------------- | ----------------------------------------------------------- | -------------------------------------------------------------------------- |
+| `profile-media` | Fotos de perfil, posts e arquivos JSON estaticos            | Policies permitem leitura/escrita publica (aplicacao roda com chave anon). |
+| `stories-media` | Midia dos stories                                           | Idem.                                                                      |
+| `chat-media`    | Anexos enviados no chat                                     | Idem.                                                                      |
+| `avatars`       | Avatares enviados manualmente no gerenciador de comentarios | Idem.                                                                      |
 
 As policies criadas em `storage.objects` liberam `SELECT/INSERT/UPDATE/DELETE` para `bucket_id` correspondente. Se for necessario restringir acesso no futuro, criar policies especificas por role.
 
@@ -56,7 +58,7 @@ Rodamos a migration `20241110_seed_core_data` (emitida via MCP) que insere:
 
 ## Triggers e Funcoes
 
-- `public.set_updated_at`: reaproveitado por quase todas as tabelas para manter `updated_at`.
+- `public.set_updated_at`: reaproveitado por quase todas as tabelas (incluindo `highlights`) para manter `updated_at`.
 - `public.update_conversation_on_message`: executado `AFTER INSERT` em `messages` para atualizar metadados da conversa.
 - `update_story_views_updated_at`: mantem consistencia de timestamps em `story_views`.
 
@@ -81,4 +83,3 @@ Rodamos a migration `20241110_seed_core_data` (emitida via MCP) que insere:
 2. **Buckets**: manter publico apenas enquanto nao houver autenticacao; considerar mover upload sensivel para backend protegido.
 3. **Monitoramento**: consultar `story_view_stats` para dashboards; usar `AdminStoryAnalytics` como front-end.
 4. **Backups**: habilitar backups automaticos do projeto Supabase (painel > Database > Backups).
-

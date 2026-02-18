@@ -12,7 +12,8 @@ import {
   Sparkles,
   Bell,
   Search,
-  ShieldCheck
+  ShieldCheck,
+  Star
 } from 'lucide-react';
 import { logoutAdmin } from '@/utils/adminAuth';
 import styles from './AdminLayout.module.css';
@@ -37,6 +38,8 @@ export default function AdminLayout({ children, unreadCount = 0 }: AdminLayoutPr
     { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={20} />, path: '/admin987654321' },
     { id: 'chat', label: 'Mensagens', icon: <MessageCircle size={20} />, path: '/admin987654321/chat', badge: unreadCount },
     { id: 'stories', label: 'Stories', icon: <Film size={20} />, path: '/admin987654321/stories' },
+    { id: 'live', label: 'Live (Fake)', icon: <Film size={20} className={styles.liveIcon} />, path: '/admin987654321/live' },
+    { id: 'highlights', label: 'Destaques', icon: <Star size={20} />, path: '/admin987654321/highlights' },
     { id: 'profile', label: 'Perfil', icon: <User size={20} />, path: '/admin987654321/profile' },
     { id: 'comments', label: 'Interações', icon: <MessageSquare size={20} />, path: '/admin987654321/comments' },
     { id: 'analytics', label: 'Relatórios', icon: <BarChart3 size={20} />, path: '/admin987654321/analytics' },
@@ -72,7 +75,7 @@ export default function AdminLayout({ children, unreadCount = 0 }: AdminLayoutPr
 
           <div className={styles.navGroup}>
             <span className={styles.navGroupLabel}>Conteúdo</span>
-            {menuItems.slice(1, 4).map(item => (
+            {menuItems.slice(1, 5).map(item => (
               <Link 
                 key={item.id}
                 to={item.path} 
@@ -89,7 +92,7 @@ export default function AdminLayout({ children, unreadCount = 0 }: AdminLayoutPr
 
           <div className={styles.navGroup}>
             <span className={styles.navGroupLabel}>Engajamento</span>
-            {menuItems.slice(4, 6).map(item => (
+            {menuItems.slice(5, 7).map(item => (
               <Link 
                 key={item.id}
                 to={item.path} 
@@ -103,7 +106,7 @@ export default function AdminLayout({ children, unreadCount = 0 }: AdminLayoutPr
 
           <div className={styles.navGroup}>
             <span className={styles.navGroupLabel}>Sistema</span>
-            {menuItems.slice(6).map(item => (
+            {menuItems.slice(7).map(item => (
               <Link 
                 key={item.id}
                 to={item.path} 

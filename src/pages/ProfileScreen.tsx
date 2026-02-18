@@ -4,6 +4,8 @@ import { useState, useEffect, useMemo } from "react";
 import { ProfileService, type ProfileSettings, type Post } from "@/services/profileService";
 import { useFollow } from "@/hooks/useFollow";
 import { StoryService } from "@/services/storyService";
+import { HighlightService, type HighlightWithStories } from "@/services/highlightService";
+import { liveService, type LiveConfig } from "@/services/liveService"; // Import live service
 import styles from "./ProfileScreen.module.css";
 
 // Função helper para normalizar URLs
@@ -60,6 +62,8 @@ export default function ProfileScreen() {
   const cachedPosts = useMemo(() => ProfileService.getCachedPostsSync(), []);
   const [profile, setProfile] = useState<ProfileSettings | null>(cachedProfile);
   const [posts, setPosts] = useState<Post[]>(cachedPosts);
+  const [highlights, setHighlights] = useState<HighlightWithStories[]>([]);
+  const [liveConfig, setLiveConfig] = useState<LiveConfig | null>(null);
 
   const { isFollowing, toggleFollow } = useFollow(profile?.username || '');
 
@@ -67,14 +71,34 @@ export default function ProfileScreen() {
   useEffect(() => {
     loadProfile();
     loadPosts();
+    checkLiveStatus();
   }, []);
+
+  const checkLiveStatus = async () => {
+    const config = await liveService.getLiveConfig();
+    if (config?.is_active) {
+      setLiveConfig(config);
+    } else {
+      setLiveConfig(null);
+    }
+  };
 
   // Carregar stories quando perfil estiver disponível
   useEffect(() => {
     if (profile) {
       StoryService.preloadStories(profile.username);
+      loadHighlights(profile.username);
     }
   }, [profile?.username]);
+
+  const loadHighlights = async (username: string) => {
+    try {
+      const data = await HighlightService.getActiveHighlights(username);
+      setHighlights(data);
+    } catch (error) {
+      console.error('Erro ao carregar highlights:', error);
+    }
+  };
 
   const loadProfile = async () => {
     try {
@@ -156,10 +180,18 @@ export default function ProfileScreen() {
           <div className={styles.profileHeader}>
             <button
               className={styles.avatarContainer}
-              onClick={() => !showSkeleton && navigate('/story', { state: { background: location, profile: profile } })}
-              style={{ opacity: showSkeleton ? 0.5 : 1 }}
+              onClick={() => {
+                if (!showSkeleton) {
+                  if (liveConfig) {
+                    navigate('/live', { state: { profile } });
+                  } else {
+                    navigate('/story', { state: { background: location, profile: profile } });
+                  }
+                }
+              }}
+              style={{ opacity: showSkeleton ? 0.5 : 1, position: 'relative' }}
             >
-              <div className={styles.avatarGradient}>
+              <div className={`${styles.avatarGradient} ${liveConfig ? styles.liveRing : ''}`}>
                 <div className={styles.avatarInner}>
                   {showSkeleton ? (
                     <div style={{
@@ -180,6 +212,7 @@ export default function ProfileScreen() {
                   )}
                 </div>
               </div>
+              {liveConfig && <div className={styles.liveBadge}>AO VIVO</div>}
             </button>
 
             <div className={styles.profileInfo}>
@@ -228,7 +261,7 @@ export default function ProfileScreen() {
                     className={styles.linkContainer}
                     target="_blank"
                     rel="noopener noreferrer"
-                    onClick={(e) => {
+                    onClick={() => {
                       // Se quiser manter o rastreio de FBP, podemos interceptar aqui ou deixar o link direto
                       // O usuário pediu especificamente "nova aba"
                     }}
@@ -264,6 +297,56 @@ export default function ProfileScreen() {
               <UserSquare color="#fff" size={16} />
             </button>
           </div>
+
+          {/* Destaques (Highlights) */}
+          {highlights.length > 0 && (
+            <div className={styles.highlightsContainer}>
+              <div className={styles.highlightsScroll}>
+                {highlights.map((highlight) => {
+                  const coverUrl = highlight.cover_media_url
+                    || (highlight.stories[0]?.thumbnail)
+                    || (highlight.stories[0]?.media_url)
+                    || '/profile.jpg';
+
+                  return (
+                    <button
+                      key={highlight.id}
+                      className={styles.highlightItem}
+                      onClick={() => navigate('/story', {
+                        state: {
+                          background: location,
+                          profile,
+                          highlightId: highlight.id,
+                          highlightStories: highlight.stories,
+                        }
+                      })}
+                    >
+                      <div className={styles.highlightCircle}>
+                        <div className={styles.highlightImageWrapper}>
+                          {highlight.stories[0]?.media_type === 'video' ? (
+                            <img
+                              src={coverUrl}
+                              alt={highlight.name}
+                              className={styles.highlightImage}
+                              onError={(e) => { e.currentTarget.src = '/profile.jpg'; }}
+                            />
+                          ) : (
+                            <img
+                              src={coverUrl}
+                              alt={highlight.name}
+                              className={styles.highlightImage}
+                              onError={(e) => { e.currentTarget.src = '/profile.jpg'; }}
+                            />
+                          )}
+                        </div>
+                      </div>
+                      <span className={styles.highlightName}>{highlight.name}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className={styles.tabsContainer}>

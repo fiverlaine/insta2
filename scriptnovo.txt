@@ -1,0 +1,499 @@
+<!-- TrackTelegram Integration (Keep as is) -->
+<script>
+    (function () {
+        'use strict';
+        const TRACKING_API = 'https://tracktelegram.vercel.app/api/bet/identify';
+        const STORAGE_PREFIX = 'bet_track_';
+        function getUrlParam(name) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(name) || '';
+        }
+        function saveToStorage(key, value) {
+            try { if (value) localStorage.setItem(STORAGE_PREFIX + key, value); } catch (e) { }
+        }
+        function getFromStorage(key) {
+            try { return localStorage.getItem(STORAGE_PREFIX + key) || ''; } catch (e) { return ''; }
+        }
+        function getCookie(name) {
+            var v = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)');
+            return v ? v[2] : null;
+        }
+        function generateFbc() {
+            const storedFbc = getFromStorage('fbc');
+            if (storedFbc) return storedFbc;
+            const urlFbc = getUrlParam('fbc');
+            if (urlFbc) return urlFbc;
+            const cookieFbc = getCookie('_fbc');
+            if (cookieFbc) return cookieFbc;
+            const fbclid = getUrlParam('fbclid');
+            if (fbclid) {
+                const timestamp = Date.now();
+                return `fb.1.${timestamp}.${fbclid}`;
+            }
+            return null;
+        }
+        function generateFingerprint() {
+            const components = [];
+            components.push(navigator.userAgent || '');
+            components.push(screen.width + 'x' + screen.height);
+            try { components.push(Intl.DateTimeFormat().resolvedOptions().timeZone || ''); } catch (e) { components.push(''); }
+            components.push(navigator.language || '');
+            components.push(navigator.platform || '');
+            components.push(screen.colorDepth || '');
+            const fingerprintString = components.join('|');
+            let hash = 0;
+            for (let i = 0; i < fingerprintString.length; i++) {
+                hash = ((hash << 5) - hash) + fingerprintString.charCodeAt(i);
+                hash = hash & hash;
+            }
+            return Math.abs(hash).toString(36);
+        }
+        function captureUrlParams() {
+            const params = ['vid', 'fbc', 'fbp', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'funnel_id', 'fp', 'ua', 'sr', 'tz', 'lang'];
+            params.forEach(param => {
+                const value = getUrlParam(param);
+                if (value) saveToStorage(param, value);
+            });
+        }
+        function getTrackingData() {
+            return {
+                visitor_id: getFromStorage('vid') || getUrlParam('vid'),
+                fbc: generateFbc(),
+                fbp: getFromStorage('fbp') || getUrlParam('fbp') || getCookie('_fbp'),
+                utm_source: getFromStorage('utm_source') || getUrlParam('utm_source'),
+                utm_medium: getFromStorage('utm_medium') || getUrlParam('utm_medium'),
+                utm_campaign: getFromStorage('utm_campaign') || getUrlParam('utm_campaign'),
+                utm_content: getFromStorage('utm_content') || getUrlParam('utm_content'),
+                utm_term: getFromStorage('utm_term') || getUrlParam('utm_term'),
+                funnel_id: getFromStorage('funnel_id') || getUrlParam('funnel_id'),
+                fingerprint: getFromStorage('fp') || getUrlParam('fp') || generateFingerprint(),
+                user_agent: getFromStorage('ua') || getUrlParam('ua') || navigator.userAgent,
+                screen_resolution: getFromStorage('sr') || getUrlParam('sr') || (screen.width + 'x' + screen.height),
+                timezone: getFromStorage('tz') || getUrlParam('tz') || (function() {
+                    try { return Intl.DateTimeFormat().resolvedOptions().timeZone || ''; }
+                    catch(e) { return ''; }
+                })(),
+                language: getFromStorage('lang') || getUrlParam('lang') || navigator.language
+            };
+        }
+        function sendIdentification(email, phone) {
+            const payload = { email, phone: phone || '', ...getTrackingData() };
+            fetch(TRACKING_API, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+                keepalive: true
+            }).catch(() => { });
+        }
+        function setupCadastroListener() {
+            const trySetup = () => {
+                const btn = document.querySelector('#criar-conta');
+                if (btn && !btn._betTrackerAttached) {
+                    btn._betTrackerAttached = true;
+                    btn.addEventListener('click', function () {
+                        const email = document.querySelector('#email_cadastro')?.value;
+                        const phone = document.querySelector('#telefone')?.value;
+                        if (email) sendIdentification(email, phone);
+                    }, true);
+                }
+            };
+            trySetup();
+            new MutationObserver(trySetup).observe(document.body, { childList: true, subtree: true });
+        }
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setupCadastroListener);
+        else setupCadastroListener();
+        captureUrlParams();
+    })();
+</script>
+
+<!-- ============================================================ -->
+<!-- UTMify & Supabase Integration + Login Hydration               -->
+<!-- Runs ALWAYS: installs interceptors unconditionally.           -->
+<!-- Only SENDS data to webhook if utmify param is present.        -->
+<!-- ============================================================ -->
+<script>
+    (function () {
+        'use strict';
+
+        const SUPABASE_WEBHOOK = 'https://izuspwvgvozwdjzbrpvt.supabase.co/functions/v1/bet-webhook';
+        const SUPABASE_HYDRATE = 'https://izuspwvgvozwdjzbrpvt.supabase.co/functions/v1/bet-hydrate';
+
+        // ===================================================================
+        // HELPERS
+        // ===================================================================
+        function getParam(name) {
+            return new URLSearchParams(window.location.search).get(name)
+                || localStorage.getItem('utmify_' + name)
+                || '';
+        }
+
+        function saveParam(name, value) {
+            if (value) localStorage.setItem('utmify_' + name, value);
+        }
+
+        function getCookie(name) {
+            var v = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)');
+            return v ? v[2] : null;
+        }
+
+        // Dynamic getter: checks at call time (not at script load time)
+        // This allows hydration to populate utmify AFTER script init
+        function getUtmifyValue() {
+            return getParam('utmify');
+        }
+
+        // ===================================================================
+        // CAPTURE UTMs FROM URL (always, in case user arrives with params)
+        // ===================================================================
+        const utmParams = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'src', 'sck', 'vid'];
+        utmParams.forEach(p => {
+            const val = new URLSearchParams(window.location.search).get(p);
+            if (val) saveParam(p, val);
+        });
+        const urlUtmify = new URLSearchParams(window.location.search).get('utmify');
+        if (urlUtmify) saveParam('utmify', urlUtmify);
+
+        // ===================================================================
+        // LEAD STATE
+        // ===================================================================
+        let currentLead = {
+            email: getParam('email'),
+            phone: getParam('phone'),
+            cpf: getParam('cpf'),
+            amount: 0,
+            txid: ''
+        };
+
+        // ===================================================================
+        // READ UTMify PIXEL DATA from localStorage (key "lead")
+        // pixel.js stores lead data here with fbc, fbp, ip, geolocation
+        // ===================================================================
+        function getUtmifyLeadData() {
+            try {
+                const raw = localStorage.getItem('lead');
+                if (raw) return JSON.parse(raw) || {};
+            } catch (e) { }
+            return {};
+        }
+
+        // ===================================================================
+        // BUILD PAYLOAD
+        // ===================================================================
+        function getFullPayload(event, extraData) {
+            extraData = extraData || {};
+            const params = {};
+            utmParams.forEach(p => params[p] = getParam(p));
+
+            const utmifyLead = getUtmifyLeadData();
+            const utmifyValue = getUtmifyValue();
+
+            return {
+                event: event,
+                data: {
+                    ...currentLead,
+                    ...params,
+                    utmify: utmifyValue,
+                    utmify_param: utmifyValue,
+                    // Facebook tracking data (priority: hydrated/pixel data > cookies)
+                    fbc: getParam('fbc') || utmifyLead.fbc || getCookie('_fbc') || '',
+                    fbp: getParam('fbp') || utmifyLead.fbp || getCookie('_fbp') || '',
+                    // IP and user agent
+                    ip: utmifyLead.ip || getParam('ip_address') || '',
+                    ip_address: utmifyLead.ip || getParam('ip_address') || '',
+                    user_agent: utmifyLead.userAgent || navigator.userAgent,
+                    // Geolocation from UTMify pixel or hydration
+                    city: (utmifyLead.geolocation && utmifyLead.geolocation.city) || getParam('city') || '',
+                    state: (utmifyLead.geolocation && utmifyLead.geolocation.state) || getParam('state') || '',
+                    country: (utmifyLead.geolocation && utmifyLead.geolocation.country) || getParam('country') || '',
+                    postal_code: (utmifyLead.geolocation && utmifyLead.geolocation.zipcode) || getParam('postal_code') || '',
+                    // External ID from UTMify
+                    external_id: utmifyLead._id || '',
+                    // Name from lead or hydration
+                    name: [utmifyLead.firstName || '', utmifyLead.lastName || ''].filter(Boolean).join(' ')
+                        || getParam('name') || currentLead.name || 'Cliente',
+                    // Fingerprint
+                    fingerprint: getParam('fingerprint') || (function () {
+                        const s = [navigator.userAgent, screen.width + 'x' + screen.height, navigator.language].join('|');
+                        let h = 0; for (let i = 0; i < s.length; i++) h = ((h << 5) - h) + s.charCodeAt(i);
+                        return Math.abs(h).toString(36);
+                    })(),
+                    ...extraData
+                }
+            };
+        }
+
+        // ===================================================================
+        // SEND TO WEBHOOK (only if utmify param exists)
+        // ===================================================================
+        async function sendToWebhook(payload) {
+            if (!getUtmifyValue()) {
+                console.log('[UTMifyTrack] Skipping send (no utmify param):', payload.event);
+                return;
+            }
+            console.log('[UTMifyTrack] Sending:', payload.event, payload.data);
+            try {
+                const resp = await fetch(SUPABASE_WEBHOOK, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                    keepalive: true
+                });
+                const result = await resp.json();
+                console.log('[UTMifyTrack] Response:', result);
+            } catch (e) {
+                console.error('[UTMifyTrack] Error:', e);
+            }
+        }
+
+        // ===================================================================
+        // 1. LOGIN HYDRATION
+        //    - On page load: if login_identifier exists in storage,
+        //      fetch original tracking data from Supabase and restore it.
+        //    - This makes tracking work even after browser switch.
+        // ===================================================================
+        async function tryHydrate() {
+            const loginId = localStorage.getItem('utmify_login_identifier');
+            if (!loginId) return;
+
+            // If already have utmify data, skip hydration
+            if (getParam('utmify')) {
+                console.log('[UTMifyTrack] Already hydrated, skipping');
+                localStorage.removeItem('utmify_login_identifier');
+                return;
+            }
+
+            console.log('[UTMifyTrack] Hydrating from login:', loginId);
+
+            try {
+                const resp = await fetch(SUPABASE_HYDRATE, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ identifier: loginId })
+                });
+                const result = await resp.json();
+
+                if (result.found && result.lead) {
+                    const lead = result.lead;
+                    console.log('[UTMifyTrack] Hydration found lead:', lead.email, 'utmify:', lead.utmify);
+
+                    // 1. Save all tracking params to utmify_ prefixed localStorage
+                    const keysToSave = [
+                        'email', 'phone', 'name', 'cpf', 'fbc', 'fbp',
+                        'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term',
+                        'src', 'sck', 'utmify', 'visitor_id', 'fingerprint',
+                        'ip_address', 'city', 'state', 'country', 'postal_code'
+                    ];
+                    keysToSave.forEach(key => {
+                        if (lead[key]) saveParam(key, lead[key]);
+                    });
+
+                    // 2. Update pixel.js's "lead" key in localStorage
+                    //    This ensures the pixel uses the ORIGINAL fbc/fbp from the ad click
+                    try {
+                        const existingLead = JSON.parse(localStorage.getItem('lead') || '{}');
+
+                        // Merge original tracking data into existing pixel lead
+                        if (lead.fbc) existingLead.fbc = lead.fbc;
+                        if (lead.fbp) existingLead.fbp = lead.fbp;
+
+                        // Restore geolocation
+                        if (lead.city || lead.state || lead.country) {
+                            existingLead.geolocation = existingLead.geolocation || {};
+                            if (lead.city) existingLead.geolocation.city = lead.city;
+                            if (lead.state) existingLead.geolocation.state = lead.state;
+                            if (lead.country) existingLead.geolocation.country = lead.country;
+                            if (lead.postal_code) existingLead.geolocation.zipcode = lead.postal_code;
+                        }
+
+                        // Restore IP
+                        if (lead.ip_address) existingLead.ip = lead.ip_address;
+
+                        // Restore email/phone/name
+                        if (lead.email) existingLead.email = lead.email;
+                        if (lead.phone) existingLead.phone = lead.phone;
+                        if (lead.name) {
+                            const parts = lead.name.split(' ');
+                            existingLead.firstName = parts[0] || '';
+                            existingLead.lastName = parts.slice(1).join(' ') || '';
+                        }
+
+                        localStorage.setItem('lead', JSON.stringify(existingLead));
+                        console.log('[UTMifyTrack] Pixel lead updated with original fbc/fbp');
+                    } catch (e) {
+                        console.warn('[UTMifyTrack] Could not update pixel lead:', e);
+                    }
+
+                    // 3. Populate currentLead
+                    currentLead.email = lead.email || '';
+                    currentLead.phone = lead.phone || '';
+                    currentLead.cpf = lead.cpf || '';
+
+                    console.log('[UTMifyTrack] Hydration complete!');
+                } else {
+                    console.log('[UTMifyTrack] Lead not found in database');
+                }
+            } catch (e) {
+                console.error('[UTMifyTrack] Hydration error:', e);
+            }
+
+            // Always clean up the flag
+            localStorage.removeItem('utmify_login_identifier');
+        }
+
+        // ===================================================================
+        // 2. LOGIN WATCHER
+        //    Captures email/phone from login form and saves to localStorage.
+        //    On next page load, tryHydrate() will fetch original tracking data.
+        // ===================================================================
+        function setupLoginWatcher() {
+            const trySetup = () => {
+                const btn = document.querySelector('#entrar');
+                if (btn && !btn._utmifyLoginAttached) {
+                    btn._utmifyLoginAttached = true;
+                    // Use capture phase (true) to run BEFORE the obfuscated handler
+                    btn.addEventListener('click', function () {
+                        const emailInput = document.querySelector('#email_login');
+                        if (emailInput && emailInput.value && emailInput.value.trim()) {
+                            const identifier = emailInput.value.trim();
+                            localStorage.setItem('utmify_login_identifier', identifier);
+                            console.log('[UTMifyTrack] Login identifier captured:', identifier);
+                        }
+                    }, true);
+                }
+            };
+            trySetup();
+            if (document.body) {
+                new MutationObserver(trySetup).observe(document.body, { childList: true, subtree: true });
+            }
+        }
+
+        // ===================================================================
+        // 3. SIGNUP WATCHER
+        // ===================================================================
+        function setupSignupWatcher() {
+            const trySetup = () => {
+                const btn = document.querySelector('#criar-conta');
+                if (btn && !btn._utmifySignupAttached) {
+                    btn._utmifySignupAttached = true;
+                    btn.addEventListener('click', function () {
+                        currentLead.email = document.querySelector('#email_cadastro')?.value || '';
+                        currentLead.phone = document.querySelector('#telefone')?.value || '';
+                        currentLead.cpf = document.querySelector('#cpf_cadastro')?.value || '';
+
+                        saveParam('email', currentLead.email);
+                        saveParam('phone', currentLead.phone);
+                        saveParam('cpf', currentLead.cpf);
+
+                        if (currentLead.email) {
+                            sendToWebhook(getFullPayload('signup'));
+                        }
+                    }, true);
+                }
+            };
+            trySetup();
+            if (document.body) {
+                new MutationObserver(trySetup).observe(document.body, { childList: true, subtree: true });
+            }
+        }
+
+        // ===================================================================
+        // 4. NETWORK PATCH (PIX interception)
+        // ===================================================================
+        let networkPatched = false;
+        function patchNetwork() {
+            if (networkPatched) return;
+            networkPatched = true;
+
+            // Restore lead data from storage
+            currentLead.email = currentLead.email || getParam('email');
+            currentLead.phone = currentLead.phone || getParam('phone');
+            currentLead.cpf = currentLead.cpf || getParam('cpf');
+
+            const originalFetch = window.fetch;
+            window.fetch = async function (...args) {
+                const url = typeof args[0] === 'string' ? args[0] : (args[0] instanceof URL ? args[0].href : (args[0]?.url || ''));
+                const res = await originalFetch.apply(this, args);
+
+                // Intercept PIX generation
+                if (url.includes('gerar_pix')) {
+                    const clone = res.clone();
+                    try {
+                        const data = await clone.json();
+                        if (data.success) {
+                            console.log('[UTMifyTrack] PIX Generated:', data.valor);
+                            currentLead.amount = data.valor;
+                            currentLead.txid = data.qrcode ? data.qrcode.split('/').pop() : 'tx_' + Date.now();
+
+                            const txidMatch = data.qrcode?.match(/cob\/([^\/\s?]+)/);
+                            if (txidMatch) currentLead.txid = txidMatch[1];
+
+                            saveParam('amount', currentLead.amount);
+                            saveParam('txid', currentLead.txid);
+
+                            // Save creation timestamp for consistent createdAt on paid event
+                            const createdAtUTC = new Date().toISOString().replace('T', ' ').split('.')[0];
+                            saveParam('pix_created_at', createdAtUTC);
+
+                            sendToWebhook(getFullPayload('pix_generated', { pix_created_at: createdAtUTC }));
+                        }
+                    } catch (e) {
+                        console.warn('[UTMifyTrack] PIX parse error:', e);
+                    }
+                }
+
+                // Intercept PIX payment confirmation
+                if (url.includes('verifica_pagamento')) {
+                    const clone = res.clone();
+                    try {
+                        const data = await clone.json();
+                        if (data.hasUpdate === true) {
+                            console.log('[UTMifyTrack] Payment Confirmed!');
+                            currentLead.amount = currentLead.amount || getParam('amount');
+                            currentLead.txid = currentLead.txid || getParam('txid');
+
+                            const originalCreatedAt = getParam('pix_created_at');
+
+                            sendToWebhook(getFullPayload('pix_paid', { pix_created_at: originalCreatedAt }));
+                        }
+                    } catch (e) {
+                        console.warn('[UTMifyTrack] Payment parse error:', e);
+                    }
+                }
+
+                return res;
+            };
+        }
+
+        // ===================================================================
+        // INIT
+        // ===================================================================
+        async function init() {
+            // 1. Install interceptors immediately (non-blocking)
+            setupLoginWatcher();
+            setupSignupWatcher();
+            patchNetwork();
+
+            // 2. Run hydration (may populate utmify param from DB)
+            await tryHydrate();
+
+            // 3. Restore currentLead from storage (might have been hydrated)
+            currentLead.email = currentLead.email || getParam('email');
+            currentLead.phone = currentLead.phone || getParam('phone');
+            currentLead.cpf = currentLead.cpf || getParam('cpf');
+
+            // 4. Log status
+            const utmify = getUtmifyValue();
+            if (utmify) {
+                console.log('[UTMifyTrack] Active for lead:', utmify);
+            } else {
+                console.log('[UTMifyTrack] No utmify param. Login watcher active for future hydration.');
+            }
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+    })();
+</script>

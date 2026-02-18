@@ -8,6 +8,7 @@ import CommentsScreen from './pages/CommentsScreen';
 import AdminPanelNew from './pages/AdminPanelNew';
 import AdminChat from './pages/AdminChat';
 import StoriesManager from './pages/StoriesManager';
+import HighlightsManager from './pages/HighlightsManager';
 import ProfileManager from './pages/ProfileManager';
 import CommentsManager from './pages/CommentsManager';
 import AdminStoryAnalytics from './pages/AdminStoryAnalytics';
@@ -15,6 +16,8 @@ import SettingsManager from './pages/SettingsManager';
 import NotFoundScreen from './pages/NotFoundScreen';
 import AdminLogin from './pages/AdminLogin';
 import BetLeads from './pages/BetLeads';
+import LiveScreen from './pages/LiveScreen';
+import LiveManager from './pages/LiveManager';
 import RequireAdminAuth from './components/RequireAdminAuth';
 import styles from './App.module.css';
 
@@ -56,6 +59,14 @@ function AppRoutes() {
           }
         />
         <Route
+          path="/admin987654321/highlights"
+          element={
+            <RequireAdminAuth>
+              <div className="admin-fullscreen"><HighlightsManager /></div>
+            </RequireAdminAuth>
+          }
+        />
+        <Route
           path="/admin987654321/profile"
           element={
             <RequireAdminAuth>
@@ -87,16 +98,24 @@ function AppRoutes() {
             </RequireAdminAuth>
           }
         />
-        <Route
-          path="/admin987654321/bet-leads"
+        <Route path="/admin987654321/bet-leads"
           element={
             <RequireAdminAuth>
               <div className="admin-fullscreen"><BetLeads /></div>
             </RequireAdminAuth>
           }
         />
+        <Route
+          path="/admin987654321/live"
+          element={
+            <RequireAdminAuth>
+              <div className="admin-fullscreen"><LiveManager /></div>
+            </RequireAdminAuth>
+          }
+        />
 
         <Route path="/" element={<div className={styles.appContainer}><ProfileScreen /></div>} />
+        <Route path="/live" element={<LiveScreen />} />
         <Route path="/post/:postId" element={<div className={styles.appContainer}><PostScreen /></div>} />
         <Route path="/post/:postId/comments" element={<div className={styles.appContainer}><CommentsScreen /></div>} />
         <Route path="/story" element={<div className={styles.appContainer}><StoryScreen /></div>} />

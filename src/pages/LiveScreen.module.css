@@ -1,0 +1,285 @@
+
+.container {
+  width: 100%;
+  height: 100vh;
+  background-color: #000;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.videoLayer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 1;
+}
+
+.overlayLayer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end; /* Align everything to bottom */
+  background: linear-gradient(180deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0) 20%, rgba(0,0,0,0) 70%, rgba(0,0,0,0.6) 100%);
+  pointer-events: none;
+}
+
+/* Header */
+.header {
+  position: absolute; /* Fix visibility over video */
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 10;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  pointer-events: auto;
+  background: linear-gradient(180deg, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 100%); /* Make header readable */
+}
+
+.hostInfo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hostAvatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.5);
+}
+
+.hostName {
+  color: #fff;
+  font-weight: 600;
+  font-size: 14px;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+}
+
+.liveBadge {
+  background-color: #E60023; /* Instagram Live Red */
+  color: #fff;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+  margin-left: 8px;
+}
+
+.viewerCount {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  background-color: rgba(0,0,0,0.3);
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.closeButton {
+  background: none;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  padding: 8px;
+}
+
+/* Comments Section */
+.commentsSection {
+  padding: 0 16px; /* Removed bottom padding as input section has top padding */
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  max-height: 50%; /* Limit height but don't force it */
+  mask-image: linear-gradient(to top, black 80%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to top, black 80%, transparent 100%);
+  pointer-events: auto;
+}
+
+.commentsList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: hidden;
+  justify-content: flex-end;
+}
+
+.commentItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.commentAvatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+}
+
+.commentContent {
+  display: flex;
+  flex-direction: column;
+}
+
+.commentUsername {
+  color: #fff;
+  font-weight: 600;
+  font-size: 13px;
+  text-shadow: 0 1px 1px rgba(0,0,0,0.8);
+}
+
+.commentText {
+  color: #fff;
+  font-size: 13px;
+  text-shadow: 0 1px 1px rgba(0,0,0,0.8);
+  max-width: 280px;
+}
+
+/* Footer Input */
+.inputSection {
+  padding: 10px 16px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  pointer-events: auto;
+}
+
+.commentInputWrapper {
+  flex: 1;
+  background-color: rgba(255,255,255,0.2);
+  border-radius: 20px;
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  border: 1px solid rgba(255,255,255,0.3);
+}
+
+.commentInput {
+  background: none;
+  border: none;
+  color: #fff;
+  width: 100%;
+  outline: none;
+  font-size: 14px;
+}
+
+.commentInput::placeholder {
+  color: rgba(255,255,255,0.7);
+}
+
+.actionButton {
+  background: none;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.modalOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+}
+
+.modalContent {
+  background: #262626;
+  padding: 24px;
+  border-radius: 12px;
+  width: 85%;
+  max-width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+}
+
+.modalTitle {
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.modalInput {
+  background: #1a1a1a;
+  border: 1px solid #363636;
+  border-radius: 8px;
+  padding: 12px;
+  color: #fff;
+  font-size: 14px;
+}
+
+.modalButton {
+  background: #0095f6;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+/* Floating Hearts */
+.floatingHeartsContainer {
+  position: absolute;
+  bottom: 80px;
+  right: 16px;
+  width: 50px;
+  height: 200px;
+  pointer-events: none;
+  z-index: 50;
+}
+
+.floatingHeart {
+  position: absolute;
+  bottom: 0;
+  right: 10px;
+  font-size: 24px;
+  animation: floatUp 2s ease-out forwards;
+}
+
+@keyframes floatUp {
+  0% { transform: translateY(0) scale(0.5); opacity: 1; }
+  20% { opacity: 1; transform: translateY(-30px) scale(1.2); }
+  50% { transform: translateY(-80px) scale(1); opacity: 0.8; }
+  100% { transform: translateY(-160px) scale(0.8); opacity: 0; }
+}
+
+.likeButtonActive {
+  animation: heartPulse 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes heartPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.3); }
+  100% { transform: scale(1); }
+}

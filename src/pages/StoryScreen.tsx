@@ -259,6 +259,7 @@ export default function StoryScreen() {
 
       // Tentar pegar perfil do state da navegação primeiro (instantâneo)
       const stateProfile = location.state?.profile as ProfileSettings | undefined;
+      const highlightStories = location.state?.highlightStories as Story[] | undefined;
       let currentProfile: ProfileSettings | null | undefined = stateProfile;
 
       if (!currentProfile) {
@@ -267,13 +268,19 @@ export default function StoryScreen() {
 
       if (currentProfile) {
         setProfile(currentProfile);
-        // Busca stories (que já devem estar preloaded no cache pelo ProfileScreen)
-        const stories = await StoryService.getActiveStories(currentProfile.username);
-        setStoriesData(stories);
 
-        if (storyIdFromUrl && stories.length > 0) {
-          const storyIndex = stories.findIndex(s => s.id === storyIdFromUrl);
-          if (storyIndex !== -1) setCurrentIndex(storyIndex);
+        // Se veio de um highlight, usar os stories do highlight
+        if (highlightStories && highlightStories.length > 0) {
+          setStoriesData(highlightStories);
+        } else {
+          // Busca stories (que já devem estar preloaded no cache pelo ProfileScreen)
+          const stories = await StoryService.getActiveStories(currentProfile.username);
+          setStoriesData(stories);
+
+          if (storyIdFromUrl && stories.length > 0) {
+            const storyIndex = stories.findIndex(s => s.id === storyIdFromUrl);
+            if (storyIndex !== -1) setCurrentIndex(storyIndex);
+          }
         }
       } else {
         try {

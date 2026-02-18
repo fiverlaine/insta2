@@ -43,7 +43,9 @@ O projeto é um **clone funcional do Instagram** desenvolvido em React/TypeScrip
 - **Painel administrativo completo** para gerenciar todo o conteúdo
 
 ### Propósito de Negócio
+
 O projeto simula um perfil de Instagram para **atrair visitantes**, fazê-los interagir (seguir, curtir, ver stories, enviar mensagens) e **rastrear cada interação** para fins de marketing digital, especificamente para:
+
 - Captura de leads via stories com links
 - Rastreamento de conversões via Meta/Facebook Pixel
 - Analytics detalhados de engajamento com stories
@@ -54,37 +56,41 @@ O projeto simula um perfil de Instagram para **atrair visitantes**, fazê-los in
 ## 2. STACK TECNOLÓGICA
 
 ### Frontend
-| Tecnologia | Versão | Uso |
-|---|---|---|
-| React | ^18.3.1 | Framework UI principal |
-| TypeScript | ^5.5.4 | Tipagem estática |
-| Vite | ^5.4.3 | Bundler e dev server |
-| React Router DOM | ^6.26.0 | Roteamento SPA |
-| TanStack React Query | ^5.83.0 | Gerenciamento de estado assíncrono |
-| Lucide React | ^0.427.0 | Biblioteca de ícones |
-| Recharts | ^3.3.0 | Gráficos no painel admin |
+
+| Tecnologia           | Versão   | Uso                                |
+| -------------------- | -------- | ---------------------------------- |
+| React                | ^18.3.1  | Framework UI principal             |
+| TypeScript           | ^5.5.4   | Tipagem estática                   |
+| Vite                 | ^5.4.3   | Bundler e dev server               |
+| React Router DOM     | ^6.26.0  | Roteamento SPA                     |
+| TanStack React Query | ^5.83.0  | Gerenciamento de estado assíncrono |
+| Lucide React         | ^0.427.0 | Biblioteca de ícones               |
+| Recharts             | ^3.3.0   | Gráficos no painel admin           |
 
 ### Backend/Banco de Dados
-| Tecnologia | Uso |
-|---|---|
-| Supabase | Backend-as-a-Service (PostgreSQL + Storage + Realtime) |
-| PostgreSQL 17.6.1 | Banco de dados relacional |
-| Supabase Realtime | WebSocket para chat e atualizações em tempo real |
-| Supabase Storage | Armazenamento de mídias (imagens, vídeos) |
+
+| Tecnologia        | Uso                                                    |
+| ----------------- | ------------------------------------------------------ |
+| Supabase          | Backend-as-a-Service (PostgreSQL + Storage + Realtime) |
+| PostgreSQL 17.6.1 | Banco de dados relacional                              |
+| Supabase Realtime | WebSocket para chat e atualizações em tempo real       |
+| Supabase Storage  | Armazenamento de mídias (imagens, vídeos)              |
 
 ### Tracking/Analytics
-| Tecnologia | Versão | Uso |
-|---|---|---|
-| FingerprintJS | ^5.0.1 | Fingerprinting de navegador |
-| UA Parser JS | ^2.0.6 | Parsing de User Agent |
+
+| Tecnologia     | Versão  | Uso                             |
+| -------------- | ------- | ------------------------------- |
+| FingerprintJS  | ^5.0.1  | Fingerprinting de navegador     |
+| UA Parser JS   | ^2.0.6  | Parsing de User Agent           |
 | Facebook Pixel | SDK web | Rastreamento de conversões Meta |
 
 ### Configuração
-| Arquivo | Função |
-|---|---|
-| `vite.config.ts` | Build com base `/instagram/`, alias `@` → `./src` |
-| `tsconfig.json` | Target ES2020, strict mode, paths alias |
-| `eslint.config.js` | Configuração mínima, ignora dist e node_modules |
+
+| Arquivo            | Função                                            |
+| ------------------ | ------------------------------------------------- |
+| `vite.config.ts`   | Build com base `/instagram/`, alias `@` → `./src` |
+| `tsconfig.json`    | Target ES2020, strict mode, paths alias           |
+| `eslint.config.js` | Configuração mínima, ignora dist e node_modules   |
 
 ---
 
@@ -120,6 +126,7 @@ insta2-main/
 │   ├── services/                 # Camada de serviços (lógica de negócio)
 │   │   ├── profileService.ts     # Perfil e posts (CRUD + cache estático)
 │   │   ├── storyService.ts       # Stories (CRUD + cache localStorage)
+│   │   ├── highlightService.ts   # Destaques/Highlights (CRUD + cache localStorage)
 │   │   ├── chatService.ts        # Chat/DM (visitante e admin)
 │   │   ├── commentService.ts     # Comentários (CRUD + hierarquia)
 │   │   ├── followService.ts      # Sistema de follow
@@ -142,10 +149,12 @@ insta2-main/
 │   │   ├── AdminChat.tsx         # Chat admin (~294 linhas)
 │   │   ├── AdminStoryAnalytics.tsx # Analytics de stories (~242 linhas)
 │   │   ├── StoriesManager.tsx    # CRUD de stories (~145 linhas)
+│   │   ├── HighlightsManager.tsx # CRUD de destaques (~250 linhas)
 │   │   ├── ProfileManager.tsx    # CRUD de perfil e posts (~277 linhas)
 │   │   ├── CommentsManager.tsx   # CRUD de comentários (~791 linhas)
 │   │   ├── SettingsManager.tsx   # Configurações do sistema (~125 linhas)
 │   │   └── *.module.css          # Estilos CSS Modules de cada página
+│   │   └── HighlightsManager.module.css # Estilos do gerenciador de destaques
 │   │
 │   ├── components/               # Componentes reutilizáveis
 │   │   ├── AdminLayout.tsx       # Layout do painel admin (~156 linhas)
@@ -201,9 +210,9 @@ insta2-main/
 │         │                 │                                   │
 │  ┌──────┴─────────────────┴────────────────────────────┐     │
 │  │              SERVICES LAYER                          │     │
-│  │  profileService │ storyService │ chatService         │     │
-│  │  commentService │ followService│ likeService         │     │
-│  │  mediaService   │ settingsService                    │     │
+│  │  profileService │ storyService │ highlightService   │     │
+│  │  chatService    │ commentService │ followService     │     │
+│  │  likeService    │ mediaService   │ settingsService   │     │
 │  │  fingerprintService │ storyViewTrackingService       │     │
 │  └─────────────────────┬───────────────────────────────┘     │
 │                        │                                      │
@@ -218,7 +227,7 @@ insta2-main/
                     │  (sa-east-1)        │
                     ├─────────────────────┤
                     │  PostgreSQL 17.6    │
-                    │  10 tabelas         │
+                    │  12 tabelas         │
                     │  2 views            │
                     │  4 buckets storage  │
                     │  Realtime channels  │
@@ -231,6 +240,7 @@ insta2-main/
 ## 5. CONFIGURAÇÕES DO PROJETO
 
 ### `package.json`
+
 - **Nome:** `insta-profissional-react`
 - **Type:** `module` (ESModules)
 - **Scripts:**
@@ -239,17 +249,20 @@ insta2-main/
   - `preview` → `vite preview` (preview do build)
 
 ### `vite.config.ts`
+
 - **Base path:** `/instagram/` (deploy em subdiretório)
 - **Alias:** `@` mapeia para `./src`
 - **Plugin:** `@vitejs/plugin-react`
 
 ### `tsconfig.json`
+
 - **Target:** ES2020
 - **Strict mode:** Habilitado
 - **noUnusedLocals/Parameters:** Habilitado
 - **Paths:** `@/*` → `./src/*`
 
 ### `index.html`
+
 - **Idioma:** pt-BR
 - **Favicon:** Favicon oficial do Instagram
 - **Scripts inline:**
@@ -262,15 +275,17 @@ insta2-main/
 ## 6. BANCO DE DADOS SUPABASE
 
 ### Informações do Projeto
-| Campo | Valor |
-|---|---|
-| **ID** | `izuspwvgvozwdjzbrpvt` |
-| **Região** | `sa-east-1` (São Paulo) |
-| **PostgreSQL** | 17.6.1.037 |
-| **Status** | ACTIVE_HEALTHY |
-| **URL** | `https://izuspwvgvozwdjzbrpvt.supabase.co` |
+
+| Campo          | Valor                                      |
+| -------------- | ------------------------------------------ |
+| **ID**         | `izuspwvgvozwdjzbrpvt`                     |
+| **Região**     | `sa-east-1` (São Paulo)                    |
+| **PostgreSQL** | 17.6.1.037                                 |
+| **Status**     | ACTIVE_HEALTHY                             |
+| **URL**        | `https://izuspwvgvozwdjzbrpvt.supabase.co` |
 
 ### Extensões Habilitadas
+
 - `plpgsql`, `uuid-ossp`, `pgcrypto`, `pg_stat_statements`, `supabase_vault`, `pg_graphql`
 
 ---
@@ -279,20 +294,20 @@ insta2-main/
 
 **Propósito:** Armazena as configurações do perfil simulado do Instagram.
 
-| Coluna | Tipo | Nullable | Default | Descrição |
-|---|---|---|---|---|
-| `id` | UUID | NO | `uuid_generate_v4()` | PK |
-| `username` | TEXT | NO | — | Username do perfil (@) |
-| `name` | TEXT | NO | — | Nome de exibição |
-| `avatar_url` | TEXT | YES | — | URL do avatar |
-| `bio` | TEXT[] | YES | — | Array de linhas da bio |
-| `link` | TEXT | YES | — | Link na bio |
-| `followers_count` | INTEGER | YES | `0` | Contagem de seguidores |
-| `following_count` | INTEGER | YES | `0` | Contagem de seguindo |
-| `posts_count` | INTEGER | YES | `0` | Contagem de posts |
-| `is_active` | BOOLEAN | YES | `true` | Se o perfil está ativo |
-| `created_at` | TIMESTAMPTZ | YES | `NOW()` | Criação |
-| `updated_at` | TIMESTAMPTZ | YES | `NOW()` | Última atualização |
+| Coluna            | Tipo        | Nullable | Default              | Descrição              |
+| ----------------- | ----------- | -------- | -------------------- | ---------------------- |
+| `id`              | UUID        | NO       | `uuid_generate_v4()` | PK                     |
+| `username`        | TEXT        | NO       | —                    | Username do perfil (@) |
+| `name`            | TEXT        | NO       | —                    | Nome de exibição       |
+| `avatar_url`      | TEXT        | YES      | —                    | URL do avatar          |
+| `bio`             | TEXT[]      | YES      | —                    | Array de linhas da bio |
+| `link`            | TEXT        | YES      | —                    | Link na bio            |
+| `followers_count` | INTEGER     | YES      | `0`                  | Contagem de seguidores |
+| `following_count` | INTEGER     | YES      | `0`                  | Contagem de seguindo   |
+| `posts_count`     | INTEGER     | YES      | `0`                  | Contagem de posts      |
+| `is_active`       | BOOLEAN     | YES      | `true`               | Se o perfil está ativo |
+| `created_at`      | TIMESTAMPTZ | YES      | `NOW()`              | Criação                |
+| `updated_at`      | TIMESTAMPTZ | YES      | `NOW()`              | Última atualização     |
 
 **RLS:** Habilitado — leitura e escrita pública.
 
@@ -302,19 +317,19 @@ insta2-main/
 
 **Propósito:** Posts do feed do perfil (suporta carrossel de múltiplas imagens).
 
-| Coluna | Tipo | Nullable | Default | Descrição |
-|---|---|---|---|---|
-| `id` | UUID | NO | `uuid_generate_v4()` | PK |
-| `profile_username` | TEXT | NO | — | FK para profile_settings |
-| `images` | TEXT[] | NO | — | Array de URLs das imagens |
-| `likes_count` | INTEGER | YES | `0` | Contagem de curtidas |
-| `comments_count` | INTEGER | YES | `0` | Contagem de comentários |
-| `caption` | TEXT | YES | — | Legenda do post |
-| `post_date` | TEXT | YES | — | Data de publicação |
-| `order_index` | INTEGER | YES | `0` | Ordem de exibição |
-| `is_active` | BOOLEAN | YES | `true` | Se o post está ativo |
-| `created_at` | TIMESTAMPTZ | YES | `NOW()` | Criação |
-| `updated_at` | TIMESTAMPTZ | YES | `NOW()` | Última atualização |
+| Coluna             | Tipo        | Nullable | Default              | Descrição                 |
+| ------------------ | ----------- | -------- | -------------------- | ------------------------- |
+| `id`               | UUID        | NO       | `uuid_generate_v4()` | PK                        |
+| `profile_username` | TEXT        | NO       | —                    | FK para profile_settings  |
+| `images`           | TEXT[]      | NO       | —                    | Array de URLs das imagens |
+| `likes_count`      | INTEGER     | YES      | `0`                  | Contagem de curtidas      |
+| `comments_count`   | INTEGER     | YES      | `0`                  | Contagem de comentários   |
+| `caption`          | TEXT        | YES      | —                    | Legenda do post           |
+| `post_date`        | TEXT        | YES      | —                    | Data de publicação        |
+| `order_index`      | INTEGER     | YES      | `0`                  | Ordem de exibição         |
+| `is_active`        | BOOLEAN     | YES      | `true`               | Se o post está ativo      |
+| `created_at`       | TIMESTAMPTZ | YES      | `NOW()`              | Criação                   |
+| `updated_at`       | TIMESTAMPTZ | YES      | `NOW()`              | Última atualização        |
 
 **RLS:** Habilitado — leitura e escrita pública.
 
@@ -324,23 +339,23 @@ insta2-main/
 
 **Propósito:** Stories com suporte a imagem e vídeo, links configuráveis.
 
-| Coluna | Tipo | Nullable | Default | Descrição |
-|---|---|---|---|---|
-| `id` | UUID | NO | `gen_random_uuid()` | PK |
-| `profile_username` | TEXT | NO | — | FK para profile_settings |
-| `media_url` | TEXT | NO | — | URL da mídia |
-| `media_type` | TEXT | NO | — | `'image'` ou `'video'` |
-| `thumbnail` | TEXT | YES | — | Thumbnail para vídeos |
-| `duration` | INTEGER | YES | `5000` | Duração em ms |
-| `order_index` | INTEGER | YES | `0` | Ordem de exibição |
-| `is_active` | BOOLEAN | YES | `true` | Se está ativo |
-| `show_link` | BOOLEAN | YES | `false` | Se mostra link |
-| `link_type` | TEXT | YES | `'none'` | `'visible'`, `'invisible'` ou `'none'` |
-| `link_x` | DOUBLE PRECISION | YES | `50` | Posição X do link (%) |
-| `link_y` | DOUBLE PRECISION | YES | `50` | Posição Y do link (%) |
-| `link_url` | TEXT | YES | — | URL específica do story |
-| `created_at` | TIMESTAMPTZ | YES | `NOW()` | Criação |
-| `updated_at` | TIMESTAMPTZ | YES | `NOW()` | Última atualização |
+| Coluna             | Tipo             | Nullable | Default             | Descrição                              |
+| ------------------ | ---------------- | -------- | ------------------- | -------------------------------------- |
+| `id`               | UUID             | NO       | `gen_random_uuid()` | PK                                     |
+| `profile_username` | TEXT             | NO       | —                   | FK para profile_settings               |
+| `media_url`        | TEXT             | NO       | —                   | URL da mídia                           |
+| `media_type`       | TEXT             | NO       | —                   | `'image'` ou `'video'`                 |
+| `thumbnail`        | TEXT             | YES      | —                   | Thumbnail para vídeos                  |
+| `duration`         | INTEGER          | YES      | `5000`              | Duração em ms                          |
+| `order_index`      | INTEGER          | YES      | `0`                 | Ordem de exibição                      |
+| `is_active`        | BOOLEAN          | YES      | `true`              | Se está ativo                          |
+| `show_link`        | BOOLEAN          | YES      | `false`             | Se mostra link                         |
+| `link_type`        | TEXT             | YES      | `'none'`            | `'visible'`, `'invisible'` ou `'none'` |
+| `link_x`           | DOUBLE PRECISION | YES      | `50`                | Posição X do link (%)                  |
+| `link_y`           | DOUBLE PRECISION | YES      | `50`                | Posição Y do link (%)                  |
+| `link_url`         | TEXT             | YES      | —                   | URL específica do story                |
+| `created_at`       | TIMESTAMPTZ      | YES      | `NOW()`             | Criação                                |
+| `updated_at`       | TIMESTAMPTZ      | YES      | `NOW()`             | Última atualização                     |
 
 **RLS:** Habilitado — leitura e escrita pública.
 
@@ -350,49 +365,49 @@ insta2-main/
 
 **Propósito:** Tracking detalhado de visualizações de stories com fingerprinting completo.
 
-| Coluna | Tipo | Nullable | Default | Descrição |
-|---|---|---|---|---|
-| `id` | UUID | NO | `gen_random_uuid()` | PK |
-| `story_id` | UUID | NO | — | FK → `stories(id)` CASCADE |
-| `visitor_id` | TEXT | NO | — | ID do visitante |
-| `session_id` | UUID | YES | `gen_random_uuid()` | ID da sessão |
-| `session_count` | INTEGER | NO | `1` | Número de sessões |
-| `watch_time_ms` | INTEGER | NO | `0` | Tempo assistido (ms) |
-| `viewed_percentage` | NUMERIC(5,2) | NO | `0` | % visualizada |
-| `completed` | BOOLEAN | NO | `false` | Se completou |
-| `exit_reason` | TEXT | YES | — | Motivo da saída |
-| `playback_events` | JSONB | NO | `'[]'` | Eventos de playback |
-| `first_viewed_at` | TIMESTAMPTZ | YES | `NOW()` | Primeira visualização |
-| `last_viewed_at` | TIMESTAMPTZ | YES | `NOW()` | Última visualização |
-| `ip_address` | TEXT | YES | — | IP do visitante |
-| `country` | TEXT | YES | — | País |
-| `city` | TEXT | YES | — | Cidade |
-| `region` | TEXT | YES | — | Região/Estado |
-| `latitude` | DOUBLE PRECISION | YES | — | Latitude |
-| `longitude` | DOUBLE PRECISION | YES | — | Longitude |
-| `isp` | TEXT | YES | — | Provedor de internet |
-| `device_type` | TEXT | YES | — | Tipo de dispositivo |
-| `device_model` | TEXT | YES | — | Modelo do dispositivo |
-| `device_vendor` | TEXT | YES | — | Fabricante |
-| `browser` | TEXT | YES | — | Navegador |
-| `browser_version` | TEXT | YES | — | Versão do navegador |
-| `os` | TEXT | YES | — | Sistema operacional |
-| `os_version` | TEXT | YES | — | Versão do SO |
-| `user_agent` | TEXT | YES | — | User Agent completo |
-| `fingerprint` | TEXT | NO | — | Fingerprint combinado |
-| `canvas_fingerprint` | TEXT | YES | — | Canvas fingerprint |
-| `webgl_fingerprint` | TEXT | YES | — | WebGL fingerprint |
-| `audio_fingerprint` | TEXT | YES | — | Audio fingerprint |
-| `fonts_fingerprint` | TEXT | YES | — | Fonts fingerprint |
-| `screen_resolution` | TEXT | YES | — | Resolução da tela |
-| `screen_color_depth` | INTEGER | YES | — | Profundidade de cor |
-| `pixel_ratio` | DOUBLE PRECISION | YES | — | Pixel ratio |
-| `timezone` | TEXT | YES | — | Fuso horário |
-| `language` | TEXT | YES | — | Idioma principal |
-| `languages` | TEXT[] | YES | — | Lista de idiomas |
-| `viewed_at` | TIMESTAMPTZ | NO | `NOW()` | Timestamp da view |
-| `created_at` | TIMESTAMPTZ | NO | `NOW()` | Criação |
-| `updated_at` | TIMESTAMPTZ | NO | `NOW()` | Atualização |
+| Coluna               | Tipo             | Nullable | Default             | Descrição                  |
+| -------------------- | ---------------- | -------- | ------------------- | -------------------------- |
+| `id`                 | UUID             | NO       | `gen_random_uuid()` | PK                         |
+| `story_id`           | UUID             | NO       | —                   | FK → `stories(id)` CASCADE |
+| `visitor_id`         | TEXT             | NO       | —                   | ID do visitante            |
+| `session_id`         | UUID             | YES      | `gen_random_uuid()` | ID da sessão               |
+| `session_count`      | INTEGER          | NO       | `1`                 | Número de sessões          |
+| `watch_time_ms`      | INTEGER          | NO       | `0`                 | Tempo assistido (ms)       |
+| `viewed_percentage`  | NUMERIC(5,2)     | NO       | `0`                 | % visualizada              |
+| `completed`          | BOOLEAN          | NO       | `false`             | Se completou               |
+| `exit_reason`        | TEXT             | YES      | —                   | Motivo da saída            |
+| `playback_events`    | JSONB            | NO       | `'[]'`              | Eventos de playback        |
+| `first_viewed_at`    | TIMESTAMPTZ      | YES      | `NOW()`             | Primeira visualização      |
+| `last_viewed_at`     | TIMESTAMPTZ      | YES      | `NOW()`             | Última visualização        |
+| `ip_address`         | TEXT             | YES      | —                   | IP do visitante            |
+| `country`            | TEXT             | YES      | —                   | País                       |
+| `city`               | TEXT             | YES      | —                   | Cidade                     |
+| `region`             | TEXT             | YES      | —                   | Região/Estado              |
+| `latitude`           | DOUBLE PRECISION | YES      | —                   | Latitude                   |
+| `longitude`          | DOUBLE PRECISION | YES      | —                   | Longitude                  |
+| `isp`                | TEXT             | YES      | —                   | Provedor de internet       |
+| `device_type`        | TEXT             | YES      | —                   | Tipo de dispositivo        |
+| `device_model`       | TEXT             | YES      | —                   | Modelo do dispositivo      |
+| `device_vendor`      | TEXT             | YES      | —                   | Fabricante                 |
+| `browser`            | TEXT             | YES      | —                   | Navegador                  |
+| `browser_version`    | TEXT             | YES      | —                   | Versão do navegador        |
+| `os`                 | TEXT             | YES      | —                   | Sistema operacional        |
+| `os_version`         | TEXT             | YES      | —                   | Versão do SO               |
+| `user_agent`         | TEXT             | YES      | —                   | User Agent completo        |
+| `fingerprint`        | TEXT             | NO       | —                   | Fingerprint combinado      |
+| `canvas_fingerprint` | TEXT             | YES      | —                   | Canvas fingerprint         |
+| `webgl_fingerprint`  | TEXT             | YES      | —                   | WebGL fingerprint          |
+| `audio_fingerprint`  | TEXT             | YES      | —                   | Audio fingerprint          |
+| `fonts_fingerprint`  | TEXT             | YES      | —                   | Fonts fingerprint          |
+| `screen_resolution`  | TEXT             | YES      | —                   | Resolução da tela          |
+| `screen_color_depth` | INTEGER          | YES      | —                   | Profundidade de cor        |
+| `pixel_ratio`        | DOUBLE PRECISION | YES      | —                   | Pixel ratio                |
+| `timezone`           | TEXT             | YES      | —                   | Fuso horário               |
+| `language`           | TEXT             | YES      | —                   | Idioma principal           |
+| `languages`          | TEXT[]           | YES      | —                   | Lista de idiomas           |
+| `viewed_at`          | TIMESTAMPTZ      | NO       | `NOW()`             | Timestamp da view          |
+| `created_at`         | TIMESTAMPTZ      | NO       | `NOW()`             | Criação                    |
+| `updated_at`         | TIMESTAMPTZ      | NO       | `NOW()`             | Atualização                |
 
 **Constraint UNIQUE:** `(story_id, fingerprint)` — Um registro por visitante por story.
 **Índices:** `story_id`, `visitor_id`, `ip_address`, `viewed_at DESC`, `session_id`, `last_viewed_at DESC`
@@ -404,14 +419,14 @@ insta2-main/
 
 **Propósito:** Registra se um visitante seguiu o perfil.
 
-| Coluna | Tipo | Nullable | Default | Descrição |
-|---|---|---|---|---|
-| `id` | UUID | NO | `uuid_generate_v4()` | PK |
-| `visitor_id` | TEXT | NO | — | ID do visitante |
-| `profile_username` | TEXT | NO | — | Username do perfil |
-| `is_following` | BOOLEAN | YES | `true` | Se está seguindo |
-| `followed_at` | TIMESTAMPTZ | YES | `NOW()` | Data do follow |
-| `updated_at` | TIMESTAMPTZ | YES | `NOW()` | Atualização |
+| Coluna             | Tipo        | Nullable | Default              | Descrição          |
+| ------------------ | ----------- | -------- | -------------------- | ------------------ |
+| `id`               | UUID        | NO       | `uuid_generate_v4()` | PK                 |
+| `visitor_id`       | TEXT        | NO       | —                    | ID do visitante    |
+| `profile_username` | TEXT        | NO       | —                    | Username do perfil |
+| `is_following`     | BOOLEAN     | YES      | `true`               | Se está seguindo   |
+| `followed_at`      | TIMESTAMPTZ | YES      | `NOW()`              | Data do follow     |
+| `updated_at`       | TIMESTAMPTZ | YES      | `NOW()`              | Atualização        |
 
 **RLS:** Habilitado — leitura e escrita pública.
 
@@ -421,14 +436,14 @@ insta2-main/
 
 **Propósito:** Registra likes de visitantes em posts.
 
-| Coluna | Tipo | Nullable | Default | Descrição |
-|---|---|---|---|---|
-| `id` | UUID | NO | `uuid_generate_v4()` | PK |
-| `visitor_id` | TEXT | NO | — | ID do visitante |
-| `post_id` | TEXT | NO | — | ID do post |
-| `is_liked` | BOOLEAN | YES | `true` | Se está curtido |
-| `liked_at` | TIMESTAMPTZ | YES | `NOW()` | Data do like |
-| `updated_at` | TIMESTAMPTZ | YES | `NOW()` | Atualização |
+| Coluna       | Tipo        | Nullable | Default              | Descrição       |
+| ------------ | ----------- | -------- | -------------------- | --------------- |
+| `id`         | UUID        | NO       | `uuid_generate_v4()` | PK              |
+| `visitor_id` | TEXT        | NO       | —                    | ID do visitante |
+| `post_id`    | TEXT        | NO       | —                    | ID do post      |
+| `is_liked`   | BOOLEAN     | YES      | `true`               | Se está curtido |
+| `liked_at`   | TIMESTAMPTZ | YES      | `NOW()`              | Data do like    |
+| `updated_at` | TIMESTAMPTZ | YES      | `NOW()`              | Atualização     |
 
 **RLS:** Habilitado — leitura e escrita pública.
 
@@ -438,14 +453,14 @@ insta2-main/
 
 **Propósito:** Registra likes de visitantes em stories.
 
-| Coluna | Tipo | Nullable | Default | Descrição |
-|---|---|---|---|---|
-| `id` | UUID | NO | `uuid_generate_v4()` | PK |
-| `visitor_id` | TEXT | NO | — | ID do visitante |
-| `story_id` | TEXT | NO | — | ID do story |
-| `is_liked` | BOOLEAN | YES | `true` | Se está curtido |
-| `liked_at` | TIMESTAMPTZ | YES | `NOW()` | Data do like |
-| `updated_at` | TIMESTAMPTZ | YES | `NOW()` | Atualização |
+| Coluna       | Tipo        | Nullable | Default              | Descrição       |
+| ------------ | ----------- | -------- | -------------------- | --------------- |
+| `id`         | UUID        | NO       | `uuid_generate_v4()` | PK              |
+| `visitor_id` | TEXT        | NO       | —                    | ID do visitante |
+| `story_id`   | TEXT        | NO       | —                    | ID do story     |
+| `is_liked`   | BOOLEAN     | YES      | `true`               | Se está curtido |
+| `liked_at`   | TIMESTAMPTZ | YES      | `NOW()`              | Data do like    |
+| `updated_at` | TIMESTAMPTZ | YES      | `NOW()`              | Atualização     |
 
 **RLS:** Habilitado — leitura e escrita pública.
 
@@ -455,15 +470,15 @@ insta2-main/
 
 **Propósito:** Conversas do chat entre visitantes e admin.
 
-| Coluna | Tipo | Nullable | Default | Descrição |
-|---|---|---|---|---|
-| `id` | UUID | NO | `uuid_generate_v4()` | PK |
-| `visitor_id` | TEXT | NO | — | ID do visitante |
-| `visitor_name` | TEXT | YES | `'Visitante'` | Nome exibido |
-| `last_message_at` | TIMESTAMPTZ | YES | `NOW()` | Última mensagem |
-| `unread_count` | INTEGER | YES | `0` | Mensagens não lidas |
-| `created_at` | TIMESTAMPTZ | YES | `NOW()` | Criação |
-| `updated_at` | TIMESTAMPTZ | YES | `NOW()` | Atualização |
+| Coluna            | Tipo        | Nullable | Default              | Descrição           |
+| ----------------- | ----------- | -------- | -------------------- | ------------------- |
+| `id`              | UUID        | NO       | `uuid_generate_v4()` | PK                  |
+| `visitor_id`      | TEXT        | NO       | —                    | ID do visitante     |
+| `visitor_name`    | TEXT        | YES      | `'Visitante'`        | Nome exibido        |
+| `last_message_at` | TIMESTAMPTZ | YES      | `NOW()`              | Última mensagem     |
+| `unread_count`    | INTEGER     | YES      | `0`                  | Mensagens não lidas |
+| `created_at`      | TIMESTAMPTZ | YES      | `NOW()`              | Criação             |
+| `updated_at`      | TIMESTAMPTZ | YES      | `NOW()`              | Atualização         |
 
 **Realtime:** Habilitado com `REPLICA IDENTITY FULL`.
 **RLS:** Habilitado — leitura e escrita pública.
@@ -474,23 +489,23 @@ insta2-main/
 
 **Propósito:** Mensagens individuais dentro de conversas.
 
-| Coluna | Tipo | Nullable | Default | Descrição |
-|---|---|---|---|---|
-| `id` | UUID | NO | `uuid_generate_v4()` | PK |
-| `conversation_id` | UUID | NO | — | FK → `conversations(id)` |
-| `content` | TEXT | YES | — | Texto da mensagem |
-| `is_from_admin` | BOOLEAN | YES | `false` | Se foi enviada pelo admin |
-| `read` | BOOLEAN | YES | `false` | Se foi lida |
-| `media_url` | TEXT | YES | — | URL da mídia anexada |
-| `media_type` | TEXT | YES | — | `'image'`, `'video'`, `'audio'`, `'document'` |
-| `media_thumbnail` | TEXT | YES | — | Thumbnail da mídia |
-| `media_duration` | INTEGER | YES | — | Duração da mídia (seg) |
-| `replied_to_story_media_url` | TEXT | YES | — | URL da mídia do story respondido |
-| `replied_to_story_media_type` | TEXT | YES | — | Tipo da mídia do story |
-| `replied_to_story_id` | TEXT | YES | — | ID do story respondido |
-| `replied_to_story_thumbnail` | TEXT | YES | — | Thumbnail do story |
-| `created_at` | TIMESTAMPTZ | YES | `NOW()` | Criação |
-| `updated_at` | TIMESTAMPTZ | YES | `NOW()` | Atualização |
+| Coluna                        | Tipo        | Nullable | Default              | Descrição                                     |
+| ----------------------------- | ----------- | -------- | -------------------- | --------------------------------------------- |
+| `id`                          | UUID        | NO       | `uuid_generate_v4()` | PK                                            |
+| `conversation_id`             | UUID        | NO       | —                    | FK → `conversations(id)`                      |
+| `content`                     | TEXT        | YES      | —                    | Texto da mensagem                             |
+| `is_from_admin`               | BOOLEAN     | YES      | `false`              | Se foi enviada pelo admin                     |
+| `read`                        | BOOLEAN     | YES      | `false`              | Se foi lida                                   |
+| `media_url`                   | TEXT        | YES      | —                    | URL da mídia anexada                          |
+| `media_type`                  | TEXT        | YES      | —                    | `'image'`, `'video'`, `'audio'`, `'document'` |
+| `media_thumbnail`             | TEXT        | YES      | —                    | Thumbnail da mídia                            |
+| `media_duration`              | INTEGER     | YES      | —                    | Duração da mídia (seg)                        |
+| `replied_to_story_media_url`  | TEXT        | YES      | —                    | URL da mídia do story respondido              |
+| `replied_to_story_media_type` | TEXT        | YES      | —                    | Tipo da mídia do story                        |
+| `replied_to_story_id`         | TEXT        | YES      | —                    | ID do story respondido                        |
+| `replied_to_story_thumbnail`  | TEXT        | YES      | —                    | Thumbnail do story                            |
+| `created_at`                  | TIMESTAMPTZ | YES      | `NOW()`              | Criação                                       |
+| `updated_at`                  | TIMESTAMPTZ | YES      | `NOW()`              | Atualização                                   |
 
 **Realtime:** Habilitado com `REPLICA IDENTITY FULL`.
 **RLS:** Habilitado — leitura e escrita pública.
@@ -501,36 +516,71 @@ insta2-main/
 
 **Propósito:** Comentários em posts com suporte a respostas aninhadas (hierarquia).
 
-| Coluna | Tipo | Nullable | Default | Descrição |
-|---|---|---|---|---|
-| `id` | UUID | NO | `uuid_generate_v4()` | PK |
-| `post_id` | TEXT | NO | — | ID do post |
-| `parent_comment_id` | UUID | YES | — | FK → `comments(id)` CASCADE (resposta) |
-| `username` | TEXT | NO | — | Username do comentarista |
-| `avatar_url` | TEXT | YES | — | Avatar do comentarista |
-| `is_verified` | BOOLEAN | YES | `false` | Badge de verificado |
-| `text` | TEXT | NO | — | Texto do comentário |
-| `image_url` | TEXT | YES | — | Imagem no comentário |
-| `likes_count` | INTEGER | YES | `0` | Curtidas no comentário |
-| `time_ago` | TEXT | NO | — | Tempo relativo ("2h", "1d") |
-| `created_at` | TIMESTAMPTZ | YES | `NOW()` | Criação |
-| `updated_at` | TIMESTAMPTZ | YES | `NOW()` | Atualização |
+| Coluna              | Tipo        | Nullable | Default              | Descrição                              |
+| ------------------- | ----------- | -------- | -------------------- | -------------------------------------- |
+| `id`                | UUID        | NO       | `uuid_generate_v4()` | PK                                     |
+| `post_id`           | TEXT        | NO       | —                    | ID do post                             |
+| `parent_comment_id` | UUID        | YES      | —                    | FK → `comments(id)` CASCADE (resposta) |
+| `username`          | TEXT        | NO       | —                    | Username do comentarista               |
+| `avatar_url`        | TEXT        | YES      | —                    | Avatar do comentarista                 |
+| `is_verified`       | BOOLEAN     | YES      | `false`              | Badge de verificado                    |
+| `text`              | TEXT        | NO       | —                    | Texto do comentário                    |
+| `image_url`         | TEXT        | YES      | —                    | Imagem no comentário                   |
+| `likes_count`       | INTEGER     | YES      | `0`                  | Curtidas no comentário                 |
+| `time_ago`          | TEXT        | NO       | —                    | Tempo relativo ("2h", "1d")            |
+| `created_at`        | TIMESTAMPTZ | YES      | `NOW()`              | Criação                                |
+| `updated_at`        | TIMESTAMPTZ | YES      | `NOW()`              | Atualização                            |
 
 **Índices:** `post_id`, `parent_comment_id`, `created_at DESC`
 **RLS:** Leitura pública; escrita apenas para `authenticated`.
 
 ---
 
-### 6.11 Tabela: `settings`
+### 6.11 Tabela: `highlights`
+
+**Propósito:** Define os grupos de destaques (highlights) que aparecem no perfil.
+
+| Coluna             | Tipo        | Nullable | Default             | Descrição                         |
+| ------------------ | ----------- | -------- | ------------------- | --------------------------------- |
+| `id`               | UUID        | NO       | `gen_random_uuid()` | PK                                |
+| `profile_username` | TEXT        | NO       | —                   | FK → `profile_settings(username)` |
+| `name`             | TEXT        | NO       | —                   | Nome do destaque                  |
+| `cover_media_url`  | TEXT        | YES      | —                   | URL da imagem de capa             |
+| `order_index`      | INTEGER     | YES      | `0`                 | Ordem de exibição                 |
+| `is_active`        | BOOLEAN     | YES      | `true`              | Se está visível                   |
+| `created_at`       | TIMESTAMPTZ | YES      | `NOW()`             | Criação                           |
+| `updated_at`       | TIMESTAMPTZ | YES      | `NOW()`             | Atualização                       |
+
+**RLS:** Leitura e escrita pública.
+
+---
+
+### 6.12 Tabela: `highlight_stories`
+
+**Propósito:** Relaciona stories específicos a um destaque (Relationship N:N).
+
+| Coluna         | Tipo        | Nullable | Default             | Descrição                |
+| -------------- | ----------- | -------- | ------------------- | ------------------------ |
+| `id`           | UUID        | NO       | `gen_random_uuid()` | PK                       |
+| `highlight_id` | UUID        | NO       | —                   | FK → `highlights(id)`    |
+| `story_id`     | UUID        | NO       | —                   | FK → `stories(id)`       |
+| `order_index`  | INTEGER     | YES      | `0`                 | Ordem dentro do destaque |
+| `created_at`   | TIMESTAMPTZ | YES      | `NOW()`             | Criação                  |
+
+**RLS:** Leitura e escrita pública.
+
+---
+
+### 6.13 Tabela: `settings`
 
 **Propósito:** Configurações gerais do sistema (key-value).
 
-| Coluna | Tipo | Descrição |
-|---|---|---|
-| `key` | TEXT | Chave da configuração (ex: `facebook_pixel_id`) |
-| `value` | TEXT | Valor da configuração |
-| `description` | TEXT | Descrição opcional |
-| `updated_at` | TIMESTAMPTZ | Última atualização |
+| Coluna        | Tipo        | Descrição                                       |
+| ------------- | ----------- | ----------------------------------------------- |
+| `key`         | TEXT        | Chave da configuração (ex: `facebook_pixel_id`) |
+| `value`       | TEXT        | Valor da configuração                           |
+| `description` | TEXT        | Descrição opcional                              |
+| `updated_at`  | TIMESTAMPTZ | Última atualização                              |
 
 ---
 
@@ -538,14 +588,14 @@ insta2-main/
 
 **Propósito:** Estatísticas agregadas de comentários por post.
 
-| Coluna | Tipo | Descrição |
-|---|---|---|
-| `post_id` | TEXT | ID do post |
-| `comments_count` | BIGINT | Comentários principais |
-| `replies_count` | BIGINT | Respostas |
-| `total_count` | BIGINT | Total (principais + respostas) |
-| `total_likes` | BIGINT | Soma de likes |
-| `last_comment_at` | TIMESTAMPTZ | Último comentário |
+| Coluna            | Tipo        | Descrição                      |
+| ----------------- | ----------- | ------------------------------ |
+| `post_id`         | TEXT        | ID do post                     |
+| `comments_count`  | BIGINT      | Comentários principais         |
+| `replies_count`   | BIGINT      | Respostas                      |
+| `total_count`     | BIGINT      | Total (principais + respostas) |
+| `total_likes`     | BIGINT      | Soma de likes                  |
+| `last_comment_at` | TIMESTAMPTZ | Último comentário              |
 
 ---
 
@@ -553,49 +603,52 @@ insta2-main/
 
 **Propósito:** Estatísticas agregadas de visualizações por story.
 
-| Coluna | Tipo | Descrição |
-|---|---|---|
-| `story_id` | UUID | ID do story |
-| `unique_views` | BIGINT | Views únicas (por fingerprint) |
-| `total_views` | BIGINT | Total de sessões |
-| `unique_ips` | BIGINT | IPs únicos |
-| `unique_visitors` | BIGINT | Visitor IDs únicos |
-| `countries_count` | BIGINT | Países diferentes |
-| `cities_count` | BIGINT | Cidades diferentes |
-| `device_types_count` | BIGINT | Tipos de dispositivo |
-| `last_viewed_at` | TIMESTAMPTZ | Última visualização |
-| `first_viewed_at` | TIMESTAMPTZ | Primeira visualização |
-| `views_last_24h` | BIGINT | Views nas últimas 24h |
-| `completed_views` | BIGINT | Views completadas |
-| `completion_rate_percentage` | NUMERIC | Taxa de conclusão (%) |
-| `avg_watch_time_ms` | NUMERIC | Tempo médio assistido |
-| `avg_viewed_percentage` | NUMERIC | % média visualizada |
-| `total_watch_time_ms` | NUMERIC | Tempo total assistido |
+| Coluna                       | Tipo        | Descrição                      |
+| ---------------------------- | ----------- | ------------------------------ |
+| `story_id`                   | UUID        | ID do story                    |
+| `unique_views`               | BIGINT      | Views únicas (por fingerprint) |
+| `total_views`                | BIGINT      | Total de sessões               |
+| `unique_ips`                 | BIGINT      | IPs únicos                     |
+| `unique_visitors`            | BIGINT      | Visitor IDs únicos             |
+| `countries_count`            | BIGINT      | Países diferentes              |
+| `cities_count`               | BIGINT      | Cidades diferentes             |
+| `device_types_count`         | BIGINT      | Tipos de dispositivo           |
+| `last_viewed_at`             | TIMESTAMPTZ | Última visualização            |
+| `first_viewed_at`            | TIMESTAMPTZ | Primeira visualização          |
+| `views_last_24h`             | BIGINT      | Views nas últimas 24h          |
+| `completed_views`            | BIGINT      | Views completadas              |
+| `completion_rate_percentage` | NUMERIC     | Taxa de conclusão (%)          |
+| `avg_watch_time_ms`          | NUMERIC     | Tempo médio assistido          |
+| `avg_viewed_percentage`      | NUMERIC     | % média visualizada            |
+| `total_watch_time_ms`        | NUMERIC     | Tempo total assistido          |
 
 ---
 
 ### 6.14 Functions e Triggers
 
-| Function | Trigger | Tabela | Descrição |
-|---|---|---|---|
-| `set_updated_at()` | `BEFORE UPDATE` | Várias | Atualiza `updated_at` automaticamente |
-| `update_conversation_on_message()` | `AFTER INSERT` | `messages` | Atualiza `last_message_at` e `unread_count` |
-| `update_story_views_updated_at()` | `BEFORE UPDATE` | `story_views` | Atualiza `updated_at` em story_views |
-| `update_comments_updated_at()` | `BEFORE UPDATE` | `comments` | Atualiza `updated_at` em comments |
+| Function                           | Trigger         | Tabela        | Descrição                                   |
+| ---------------------------------- | --------------- | ------------- | ------------------------------------------- |
+| `set_updated_at()`                 | `BEFORE UPDATE` | Várias        | Atualiza `updated_at` automaticamente       |
+| `update_conversation_on_message()` | `AFTER INSERT`  | `messages`    | Atualiza `last_message_at` e `unread_count` |
+| `update_story_views_updated_at()`  | `BEFORE UPDATE` | `story_views` | Atualiza `updated_at` em story_views        |
+| `update_comments_updated_at()`     | `BEFORE UPDATE` | `comments`    | Atualiza `updated_at` em comments           |
 
 ---
 
 ## 7. SERVIÇOS (SERVICES)
 
 ### 7.1 `profileService.ts` (~795 linhas)
+
 **Responsabilidade:** CRUD completo de perfil e posts com sistema de cache em 3 camadas.
 
 **Estratégia de Cache (ordem de prioridade):**
+
 1. **Arquivo estático JSON** no Supabase Storage (mais rápido)
 2. **localStorage** com TTL de 5 minutos
 3. **Query no Supabase** (banco de dados)
 
 **Métodos principais:**
+
 - `getProfile()` — Busca perfil ativo (estático → cache → banco)
 - `updateProfile()` — Atualiza perfil + regenera arquivos estáticos
 - `uploadAvatar()` — Upload de avatar para Storage
@@ -607,15 +660,18 @@ insta2-main/
 - `generateStaticFiles()` — Gera JSONs estáticos no Storage
 
 **Arquivos estáticos gerados:**
+
 - `static-profile-data.json` → Dados do perfil
 - `static-posts-data.json` → Dados dos posts
 
 ---
 
 ### 7.2 `storyService.ts` (~462 linhas)
+
 **Responsabilidade:** CRUD de stories com cache localStorage.
 
 **Métodos principais:**
+
 - `uploadStoryMedia()` — Upload para bucket `stories-media`
 - `createStory()` — Criar story com auto-incremento de order_index
 - `getActiveStories()` — Listar ativos (cache 5min → banco)
@@ -628,10 +684,30 @@ insta2-main/
 
 ---
 
-### 7.3 `chatService.ts` (~290 linhas)
+### 7.3 `highlightService.ts` (~420 linhas)
+
+**Responsabilidade:** CRUD de destaques e associação com stories.
+
+**Métodos principais:**
+
+- `getAllHighlights()` — Lista todos os destaques de um perfil (admin)
+- `getActiveHighlights()` — Lista apenas ativos com stories inclusos (visitante)
+- `createHighlight()` — Cria destaque + associa stories iniciais
+- `updateHighlight()` — Atualiza nome/capa
+- `updateHighlightStories()` — Atualiza lista de stories vinculados
+- `deleteHighlight()` — Remove destaque (cascade remove associações)
+- `toggleHighlightActive()` — Ativa/desativa visualização
+- `uploadHighlightCover()` — Upload de capa para storage
+- `clearCache()` — Limpa cache local
+
+---
+
+### 7.4 `chatService.ts` (~290 linhas)
+
 **Responsabilidade:** Sistema de chat com mensagens em tempo real.
 
 **Classes:**
+
 - **`ChatService`** (visitante):
   - `getOrCreateConversation()` — Cria ou recupera conversa
   - `sendMessage()` — Envia mensagem com suporte a mídia e resposta a story
@@ -647,9 +723,11 @@ insta2-main/
 ---
 
 ### 7.4 `commentService.ts` (~229 linhas)
+
 **Responsabilidade:** CRUD de comentários com hierarquia (replies).
 
 **Métodos:**
+
 - `getCommentsByPost()` — Busca e organiza comentários em árvore
 - `createComment()` — Cria comentário (root ou reply)
 - `updateComment()` — Atualiza comentário
@@ -661,9 +739,11 @@ insta2-main/
 ---
 
 ### 7.5 `followService.ts` (~172 linhas)
+
 **Responsabilidade:** Sistema de follow/unfollow com cache.
 
 **Métodos:**
+
 - `getCachedFollowState()` — Estado do cache (síncrono)
 - `isFollowing()` — Verifica no banco
 - `toggleFollow()` — Alterna estado (cria ou atualiza registro)
@@ -672,14 +752,17 @@ insta2-main/
 ---
 
 ### 7.6 `likeService.ts` (~371 linhas)
+
 **Responsabilidade:** Likes em posts e stories com cache.
 
 **Métodos para Posts:**
+
 - `getCachedPostLikeState()` / `isPostLiked()` — Estado do like
 - `togglePostLike()` — Alternar like
 - `subscribeToPostLike()` — Realtime
 
 **Métodos para Stories:**
+
 - `getCachedStoryLikeState()` / `isStoryLiked()` — Estado do like
 - `toggleStoryLike()` — Alternar like
 - `subscribeToStoryLike()` — Realtime
@@ -687,9 +770,11 @@ insta2-main/
 ---
 
 ### 7.7 `mediaService.ts` (~277 linhas)
+
 **Responsabilidade:** Upload e processamento de mídias.
 
 **Métodos:**
+
 - `uploadFile()` — Upload para bucket `chat-media`
 - `getMediaType()` — Detecta tipo (imagem/vídeo/áudio/documento)
 - `isValidFileType()` — Valida tipos permitidos
@@ -703,9 +788,11 @@ insta2-main/
 ---
 
 ### 7.8 `settingsService.ts` (~56 linhas)
+
 **Responsabilidade:** CRUD da tabela `settings` (key-value).
 
 **Métodos:**
+
 - `getSetting(key)` — Busca valor
 - `updateSetting(key, value)` — Atualiza valor
 - `getFacebookPixelId()` — Atalho para pixel ID
@@ -714,9 +801,11 @@ insta2-main/
 ---
 
 ### 7.9 `fingerprintService.ts` (~513 linhas)
+
 **Responsabilidade:** Fingerprinting completo do visitante.
 
 **Dados coletados:**
+
 - **FingerprintJS** → Visitor ID único
 - **Geolocalização** → IP, país, cidade, região, lat/long, ISP (3 APIs de fallback: ipapi.co → ip-api.com → ipinfo.io)
 - **Dispositivo** → Tipo, modelo, fabricante (via UA Parser)
@@ -732,13 +821,16 @@ insta2-main/
 ---
 
 ### 7.10 `storyViewTrackingService.ts` (~597 linhas)
+
 **Responsabilidade:** Tracking detalhado de visualizações de stories.
 
 **Conceito de sessão:**
+
 1. `beginViewSession()` — Inicia sessão (gera fingerprint, verifica existente)
 2. `commitViewSession()` — Finaliza com métricas (INSERT ou UPDATE)
 
 **Métricas rastreadas:**
+
 - Tempo assistido (ms)
 - Porcentagem visualizada (0-100%)
 - Se completou o story
@@ -746,10 +838,12 @@ insta2-main/
 - Eventos de playback (`enter`, `play`, `pause`, `resume`, `mute_toggle`, `progress`, `complete`, `exit`, `reply`, `link`)
 
 **Critérios mínimos para contar view:**
+
 - Imagem: ≥1200ms OU ≥20%
 - Vídeo: ≥1800ms OU ≥20%
 
 **Consultas de analytics:**
+
 - `getStoryStats()` — Stats agregadas (via view)
 - `getStoryViews()` — Lista de visualizações
 - `getViewsByCountry()` / `getViewsByDevice()` / `getViewsByCity()` — Agrupamentos
@@ -758,9 +852,11 @@ insta2-main/
 ---
 
 ### 7.11 `avatarService.ts` (~49 linhas)
+
 **Responsabilidade:** Geração de avatares aleatórios via Random User API.
 
 **Métodos:**
+
 - `getRandomAvatar()` — Avatar aleatório
 - `getAvatarByName(name)` — Avatar determinístico baseado no nome (hash)
 - `getMultipleAvatars(count)` — Múltiplos avatares
@@ -770,9 +866,11 @@ insta2-main/
 ## 8. PÁGINAS PÚBLICAS (VISITANTE)
 
 ### 8.1 `ProfileScreen.tsx` (~400 linhas)
+
 **Rota:** `/`
 
 **Funcionalidades:**
+
 - Header com username
 - Avatar com gradiente (clicável → abre stories)
 - Nome e estatísticas (posts, seguidores, seguindo)
@@ -787,9 +885,11 @@ insta2-main/
 ---
 
 ### 8.2 `PostScreen.tsx` (~399 linhas)
+
 **Rota:** `/post/:postId`
 
 **Funcionalidades:**
+
 - Carrossel de imagens com scroll snap horizontal
 - Indicadores de progresso (dots + contador x/n)
 - Like com duplo-tap e animação de coração
@@ -802,9 +902,11 @@ insta2-main/
 ---
 
 ### 8.3 `StoryScreen.tsx` (~956 linhas) ⭐ MAIS COMPLEXA
+
 **Rota:** `/story`
 
 **Funcionalidades:**
+
 - Barra de progresso animada por story
 - Navegação toque esquerda/direita + avanço automático
 - Suporte a vídeo e imagem
@@ -831,9 +933,11 @@ insta2-main/
 ---
 
 ### 8.4 `ChatScreen.tsx` (~439 linhas)
+
 **Rota:** `/chat`
 
 **Funcionalidades:**
+
 - Cabeçalho com info do perfil
 - Introdução (avatar, nome, seguidores)
 - Lista de mensagens com scroll automático
@@ -849,9 +953,11 @@ insta2-main/
 ---
 
 ### 8.5 `CommentsScreen.tsx` (~265 linhas)
+
 **Rota:** `/post/:postId/comments`
 
 **Funcionalidades:**
+
 - Lista de comentários organizados hierarquicamente
 - Respostas aninhadas (expandir/ocultar)
 - Like em comentários (local)
@@ -862,9 +968,11 @@ insta2-main/
 ---
 
 ### 8.6 `NotFoundScreen.tsx` (~15 linhas)
+
 **Rota:** `*` (qualquer rota não encontrada)
 
 **Funcionalidades:**
+
 - Mensagem "Página não encontrada"
 - Link para voltar ao perfil
 
@@ -873,6 +981,7 @@ insta2-main/
 ## 9. PAINEL ADMINISTRATIVO
 
 ### Acesso
+
 - **URL base:** `/admin987654321`
 - **Login:** `/admin987654321/login`
 - **Credenciais:** `admin@gmail.com` / `Matematica123*` (hardcoded)
@@ -882,6 +991,7 @@ insta2-main/
 ---
 
 ### 9.1 `AdminLogin.tsx` (~150 linhas)
+
 **Rota:** `/admin987654321/login`
 
 - Formulário com email e senha
@@ -892,6 +1002,7 @@ insta2-main/
 ---
 
 ### 9.2 `AdminPanelNew.tsx` — Dashboard (~229 linhas)
+
 **Rota:** `/admin987654321`
 
 - **KPI Cards:** Visitantes Únicos, Novos Leads, Seguidores, Cliques
@@ -904,6 +1015,7 @@ insta2-main/
 ---
 
 ### 9.3 `AdminChat.tsx` (~294 linhas)
+
 **Rota:** `/admin987654321/chat`
 
 - Sidebar com lista de conversas (badge não lidas)
@@ -915,17 +1027,28 @@ insta2-main/
 ---
 
 ### 9.4 `StoriesManager.tsx` (~145 linhas)
+
 **Rota:** `/admin987654321/stories`
 
 - Upload de novos stories (imagem/vídeo)
 - Grid com preview de mídia
 - Toggle ativo/inativo
 - Exclusão com confirmação
-- Configuração de link (URL, tipo, posição x/y)
+- Gráficos de retenção e cliques
+- Listagem detalhada de visualizações por IP/Localização
 
----
+### 9.5 `HighlightsManager.tsx` (~250 linhas)
 
-### 9.5 `ProfileManager.tsx` (~277 linhas)
+**Funcionalidade:** Gestão de destaques estilo Instagram.
+
+- Criação de novos grupos de destaques
+- Seleção visual de stories existentes para compor o destaque
+- Ordenação manual de stories dentro do destaque
+- Upload de capas personalizadas ou uso de thumbnails automáticas
+- Toggle de visibilidade no perfil público
+
+### 9.6 `ProfileManager.tsx` (~277 linhas)
+
 **Rota:** `/admin987654321/profile`
 
 - **Aba Perfil:** Username, nome, avatar (upload), bio (multi-linha), link, seguidores/seguindo
@@ -934,6 +1057,7 @@ insta2-main/
 ---
 
 ### 9.6 `CommentsManager.tsx` (~791 linhas)
+
 **Rota:** `/admin987654321/comments`
 
 - Seletor de post (dropdown com preview)
@@ -945,6 +1069,7 @@ insta2-main/
 ---
 
 ### 9.7 `AdminStoryAnalytics.tsx` (~242 linhas)
+
 **Rota:** `/admin987654321/analytics`
 
 - Seletor de story (rail horizontal)
@@ -956,6 +1081,7 @@ insta2-main/
 ---
 
 ### 9.8 `SettingsManager.tsx` (~125 linhas)
+
 **Rota:** `/admin987654321/settings`
 
 - Configuração do Facebook Pixel ID
@@ -966,6 +1092,7 @@ insta2-main/
 ## 10. COMPONENTES REUTILIZÁVEIS
 
 ### 10.1 `AdminLayout.tsx` (~156 linhas)
+
 **Usado por:** Todas as páginas admin
 
 - Sidebar com branding "InstaElite"
@@ -980,6 +1107,7 @@ insta2-main/
 ---
 
 ### 10.2 `RequireAdminAuth.tsx` (~35 linhas)
+
 **Usado por:** Wrapping de todas as rotas admin em `App.tsx`
 
 - Verifica `isAdminAuthenticated()` via localStorage
@@ -992,12 +1120,14 @@ insta2-main/
 ## 11. HOOKS CUSTOMIZADOS
 
 ### 11.1 `useFollow.ts` (~48 linhas)
+
 - Carrega estado do cache (síncrono instantâneo)
 - Verifica no banco (assíncrono)
 - Subscribe realtime para mudanças
 - Retorna: `{ isFollowing, loading, toggleFollow }`
 
 ### 11.2 `usePostLike.ts` (~54 linhas)
+
 - Carrega estado do cache (síncrono)
 - Verifica no banco (assíncrono)
 - Subscribe realtime
@@ -1005,6 +1135,7 @@ insta2-main/
 - Retorna: `{ isLiked, likesCount, loading, toggleLike }`
 
 ### 11.3 `useStoryLike.ts` (~61 linhas)
+
 - Validação de storyId (proteção contra vazio)
 - Carrega cache → verifica banco → subscribe realtime
 - Retorna: `{ isLiked, loading, toggleLike }`
@@ -1016,6 +1147,7 @@ insta2-main/
 ## 12. UTILITÁRIOS (UTILS)
 
 ### 12.1 `adminAuth.ts` (~38 linhas)
+
 - `isAdminAuthenticated()` — Verifica token no localStorage
 - `authenticateAdmin(email, password)` — Valida credenciais hardcoded
 - `logoutAdmin()` — Remove token
@@ -1023,6 +1155,7 @@ insta2-main/
 - **Credenciais fixas:** `admin@gmail.com` / `Matematica123*`
 
 ### 12.2 `cacheBuster.ts` (~145 linhas)
+
 - `clearAllCache()` — Limpa localStorage, sessionStorage, Service Workers, Cache API
 - `addCacheBuster(url)` — Adiciona `_t=timestamp` na URL
 - `forceHardReload()` — Reload completo da página
@@ -1032,12 +1165,14 @@ insta2-main/
 - `diagnoseImageLoading(urls)` — Diagnóstico completo
 
 ### 12.3 `dataNormalization.ts` (~217 linhas)
+
 - Normalização de dados pessoais para Meta Pixel Advanced Matching:
   - `normalizeEmail`, `normalizePhone`, `normalizeName`, `normalizeZip`, `normalizeCity`, `normalizeState`, `normalizeCountry`
 - Hash SHA256 via Web Crypto API:
   - `hashSHA256`, `hashEmail`, `hashPhone`, `hashName`, etc.
 
 ### 12.4 `facebookPixel.ts` (~373 linhas)
+
 - `isPixelLoaded()` — Verifica se `window.fbq` existe
 - `getFbpCookie()` / `getFbcCookie()` — Lê cookies do Facebook
 - `trackEvent(eventName, params)` — Rastreia evento padrão com:
@@ -1048,6 +1183,7 @@ insta2-main/
 - `trackLeadFromStory(storyIndex, linkUrl)` — Evento "Lead" de story
 
 ### 12.5 `visitor.ts` (~25 linhas)
+
 - `getVisitorId()` — Gera/recupera ID único `visitor_{timestamp}_{random}` via localStorage
 - `clearVisitorId()` — Limpa ID (para testes)
 
@@ -1056,18 +1192,21 @@ insta2-main/
 ## 13. MOCKS E DADOS ESTÁTICOS
 
 ### 13.1 `mocks/profile.ts` (~66 linhas)
-- Perfil mock: "Pedro Monteiro" (@pedroomonteeiroo__)
+
+- Perfil mock: "Pedro Monteiro" (@pedroomonteeiroo\_\_)
 - 234K followers, 387 following
 - Bio motivacional
 - 3 posts com imagens locais
 
 ### 13.2 `mocks/comments.ts` (~207 linhas)
+
 - Comentários mock para 3 posts
 - Hierarquia com replies aninhados
 - `getCommentsForPost(postId)` — Busca do localStorage → dados fake
 - `countTotalComments(postId)` — Conta total incluindo replies
 
 ### 13.3 `mocks/stories.ts` (~22 linhas)
+
 - 2 stories mock de tipo imagem
 - Duração de 5000ms cada
 
@@ -1076,10 +1215,12 @@ insta2-main/
 ## 14. ESTILOS E CSS
 
 ### Estratégia
+
 - **CSS Modules** (`.module.css`) para cada página/componente
 - **CSS global** (`styles/index.css`) para reset e layout base
 
 ### Layout Base (`index.css`)
+
 - **Reset global:** margin/padding 0, box-sizing border-box
 - **Fundo:** `#1a1a1a` (cinza escuro, estilo Instagram dark mode)
 - **Texto:** Branco, font-family sistema (Apple, Segoe UI, Roboto...)
@@ -1093,6 +1234,7 @@ insta2-main/
 ## 15. INTEGRAÇÕES EXTERNAS
 
 ### 15.1 Facebook/Meta Pixel
+
 - **Carregamento:** SDK em `index.html`
 - **Inicialização:** Em `App.tsx` (busca ID da tabela `settings`)
 - **Cookie `_fbp`:** Criado no `index.html` se não existir
@@ -1104,11 +1246,13 @@ insta2-main/
 - **Compartilhamento de fbp:** Via `postMessage` para iframes
 
 ### 15.2 APIs de Geolocalização (fallback em cadeia)
+
 1. `ipapi.co` (100 req/dia grátis)
 2. `ip-api.com` (45 req/min grátis)
 3. `ipify.org` + `ipinfo.io`
 
 ### 15.3 Random User API
+
 - Geração de avatares: `https://randomuser.me/api/portraits/`
 
 ---
@@ -1116,6 +1260,7 @@ insta2-main/
 ## 16. FLUXO DE DADOS
 
 ### Fluxo do Visitante
+
 ```
 1. Visitante acessa /instagram/ (ProfileScreen)
    ├── Carrega perfil (cache estático → localStorage → Supabase)
@@ -1145,6 +1290,7 @@ insta2-main/
 ```
 
 ### Fluxo do Admin
+
 ```
 1. Admin acessa /instagram/admin987654321/login
    └── Autentica com credenciais fixas
@@ -1196,12 +1342,12 @@ insta2-main/
 
 ## 18. STORAGE BUCKETS
 
-| Bucket | Uso | Policies |
-|---|---|---|
+| Bucket          | Uso                                                   | Policies                    |
+| --------------- | ----------------------------------------------------- | --------------------------- |
 | `profile-media` | Avatares e imagens de posts + arquivos estáticos JSON | Público (leitura e escrita) |
-| `stories-media` | Mídias dos stories (imagens e vídeos) | Público |
-| `chat-media` | Mídias do chat (imagens, vídeos, áudios) | Público |
-| `avatars` | Avatares de comentários (upload no CommentsManager) | Público |
+| `stories-media` | Mídias dos stories (imagens e vídeos)                 | Público                     |
+| `chat-media`    | Mídias do chat (imagens, vídeos, áudios)              | Público                     |
+| `avatars`       | Avatares de comentários (upload no CommentsManager)   | Público                     |
 
 **Limite de arquivo:** 50MB (validado no frontend)
 
@@ -1210,14 +1356,15 @@ insta2-main/
 ## 19. REALTIME (WEBSOCKET)
 
 ### Channels Ativos
-| Canal | Tabela | Eventos | Usado em |
-|---|---|---|---|
-| `messages:{conversationId}` | `messages` | INSERT | ChatScreen, AdminChat |
-| `conversations` | `conversations` | INSERT, UPDATE | AdminChat |
-| `follow:{visitorId}:{username}` | `profile_follows` | * | useFollow |
-| `post_like:{visitorId}:{postId}` | `post_likes` | * | usePostLike |
-| `story_like:{visitorId}:{storyId}` | `story_likes` | * | useStoryLike |
-| `comments:{postId}` | `comments` | * | CommentService |
+
+| Canal                              | Tabela            | Eventos        | Usado em              |
+| ---------------------------------- | ----------------- | -------------- | --------------------- |
+| `messages:{conversationId}`        | `messages`        | INSERT         | ChatScreen, AdminChat |
+| `conversations`                    | `conversations`   | INSERT, UPDATE | AdminChat             |
+| `follow:{visitorId}:{username}`    | `profile_follows` | \*             | useFollow             |
+| `post_like:{visitorId}:{postId}`   | `post_likes`      | \*             | usePostLike           |
+| `story_like:{visitorId}:{storyId}` | `story_likes`     | \*             | useStoryLike          |
+| `comments:{postId}`                | `comments`        | \*             | CommentService        |
 
 **Configuração:** `eventsPerSecond: 10` (definido no cliente Supabase)
 
@@ -1226,26 +1373,28 @@ insta2-main/
 ## 20. MAPA DE ROTAS
 
 ### Rotas Públicas (Visitante)
-| Rota | Componente | Descrição |
-|---|---|---|
-| `/` | `ProfileScreen` | Perfil principal |
-| `/post/:postId` | `PostScreen` | Post individual |
-| `/post/:postId/comments` | `CommentsScreen` | Comentários do post |
-| `/story` | `StoryScreen` | Visualizador de stories |
-| `/chat` | `ChatScreen` | Chat/DM |
-| `*` | `NotFoundScreen` | 404 |
+
+| Rota                     | Componente       | Descrição               |
+| ------------------------ | ---------------- | ----------------------- |
+| `/`                      | `ProfileScreen`  | Perfil principal        |
+| `/post/:postId`          | `PostScreen`     | Post individual         |
+| `/post/:postId/comments` | `CommentsScreen` | Comentários do post     |
+| `/story`                 | `StoryScreen`    | Visualizador de stories |
+| `/chat`                  | `ChatScreen`     | Chat/DM                 |
+| `*`                      | `NotFoundScreen` | 404                     |
 
 ### Rotas Admin (Protegidas)
-| Rota | Componente | Descrição |
-|---|---|---|
-| `/admin987654321/login` | `AdminLogin` | Login |
-| `/admin987654321` | `AdminPanelNew` | Dashboard |
-| `/admin987654321/chat` | `AdminChat` | Chat admin |
-| `/admin987654321/stories` | `StoriesManager` | Gerenciar stories |
-| `/admin987654321/profile` | `ProfileManager` | Gerenciar perfil/posts |
-| `/admin987654321/analytics` | `AdminStoryAnalytics` | Analytics |
-| `/admin987654321/comments` | `CommentsManager` | Gerenciar comentários |
-| `/admin987654321/settings` | `SettingsManager` | Configurações |
+
+| Rota                        | Componente            | Descrição              |
+| --------------------------- | --------------------- | ---------------------- |
+| `/admin987654321/login`     | `AdminLogin`          | Login                  |
+| `/admin987654321`           | `AdminPanelNew`       | Dashboard              |
+| `/admin987654321/chat`      | `AdminChat`           | Chat admin             |
+| `/admin987654321/stories`   | `StoriesManager`      | Gerenciar stories      |
+| `/admin987654321/profile`   | `ProfileManager`      | Gerenciar perfil/posts |
+| `/admin987654321/analytics` | `AdminStoryAnalytics` | Analytics              |
+| `/admin987654321/comments`  | `CommentsManager`     | Gerenciar comentários  |
+| `/admin987654321/settings`  | `SettingsManager`     | Configurações          |
 
 **Nota:** Todas as rotas admin (exceto login) são protegidas pelo `RequireAdminAuth`.
 **Base path:** `/instagram/` (configurado no Vite e no BrowserRouter)
@@ -1255,23 +1404,25 @@ insta2-main/
 ## RESUMO FINAL
 
 ### Números do Projeto
-| Métrica | Valor |
-|---|---|
-| **Total de arquivos TS/TSX** | ~30 |
-| **Total de arquivos CSS** | ~18 |
+
+| Métrica                                  | Valor   |
+| ---------------------------------------- | ------- |
+| **Total de arquivos TS/TSX**             | ~30     |
+| **Total de arquivos CSS**                | ~18     |
 | **Total de linhas de código (estimado)** | ~8.000+ |
-| **Tabelas no banco** | 10 |
-| **Views no banco** | 2 |
-| **Triggers** | 4 |
-| **Storage Buckets** | 4 |
-| **Dependências de produção** | 7 |
-| **Dependências de desenvolvimento** | 4 |
-| **Rotas públicas** | 6 |
-| **Rotas admin** | 8 |
-| **Serviços (classes)** | 11 |
-| **Hooks customizados** | 3 |
+| **Tabelas no banco**                     | 10      |
+| **Views no banco**                       | 2       |
+| **Triggers**                             | 4       |
+| **Storage Buckets**                      | 4       |
+| **Dependências de produção**             | 7       |
+| **Dependências de desenvolvimento**      | 4       |
+| **Rotas públicas**                       | 6       |
+| **Rotas admin**                          | 8       |
+| **Serviços (classes)**                   | 11      |
+| **Hooks customizados**                   | 3       |
 
 ### Pontos Fortes
+
 1. Sistema de cache em 3 camadas (estático → localStorage → banco)
 2. Tracking de stories extremamente detalhado
 3. Fingerprinting robusto com múltiplas técnicas
@@ -1280,6 +1431,7 @@ insta2-main/
 6. Painel admin completo com analytics
 
 ### Pontos a Melhorar
+
 1. Autenticação admin deveria usar Supabase Auth
 2. Credenciais não devem estar hardcoded
 3. RLS policies deveriam ser mais restritivas
